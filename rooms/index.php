@@ -1,0 +1,131 @@
+<?php
+require_once __DIR__ . '/../config/config.php';
+require_login();
+
+$statusFilter = $_GET['status'] ?? '';
+$zoneFilter = trim($_GET['zone'] ?? '');
+$search = trim($_GET['q'] ?? '');
+
+$sql = 'SELECT * FROM rooms WHERE 1=1';
+$params = [];
+if ($statusFilter !== '') {
+    $sql .= ' AND status = ?';
+    $params[] = $statusFilter;
+}
+if ($zoneFilter !== '') {
+    $sql .= ' AND zone = ?';
+    $params[] = $zoneFilter;
+}
+if ($search !== '') {
+    $sql .= ' AND (room_code LIKE ? OR room_type LIKE ? OR zone LIKE ?)';
+    $params[] = "%$search%";
+    $params[] = "%$search%";
+    $params[] = "%$search%";
+}
+$sql .= ' ORDER BY zone ASC, room_code ASC';
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$rooms = $stmt->fetchAll();
+
+$zones = $pdo->query("SELECT DISTINCT zone FROM rooms WHERE zone IS NOT NULL AND zone != '' ORDER BY zone")->fetchAll(PDO::FETCH_COLUMN);
+
+$pageTitle = 'Danh sách phòng';
+require_once __DIR__ . '/../includes/header.php';
+?>
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h4 class="mb-0"><i class="bi bi-door-closed"></i> Danh sách phòng</h4>
+  <a href="<?= url('/rooms/form.php') ?>" class="btn btn-success"><i class="bi bi-plus-lg"></i> Thêm phòng</a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form class="row g-2 align-items-end">
+      <div class="col-sm-3">
+        <label class="form-label small mb-1">Tìm kiếm</label>
+        <input type="text" name="q" class="form-control" placeholder="Mã phòng, khu vực..." value="<?= e($search) ?>">
+      </div>
+      <div class="col-sm-3">
+        <label class="form-label small mb-1">Khu vực</label>
+        <select name="zone" class="form-select">
+          <option value="">-- Tất cả khu vực --</option>
+          <?php foreach ($zones as $z): ?>
+            <option value="<?= e($z) ?>" <?= $zoneFilter === $z ? 'selected' : '' ?>><?= e($z) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="col-sm-3">
+        <label class="form-label small mb-1">Trạng thái</label>
+        <select name="status" class="form-select">
+          <option value="">-- Tất cả --</option>
+          <?php foreach (ROOM_STATUS_LABELS as $k => $v): ?>
+            <option value="<?= e($k) ?>" <?= $statusFilter === $k ? 'selected' : '' ?>><?= e($v) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="col-sm-2">
+        <button class="btn btn-outline-secondary w-100"><i class="bi bi-search"></i> Lọc</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<?php if (!$rooms): ?>
+  <div class="card"><div class="text-center text-muted py-5">Chưa có phòng nào.</div></div>
+<?php endif; ?>
+
+<?php
+$grouped = [];
+foreach ($rooms as $r) {
+    $zoneKey = $r['zone'] !== null && $r['zone'] !== '' ? $r['zone'] : 'Chưa phân khu vực';
+    $grouped[$zoneKey][] = $r;
+}
+?>
+
+<?php foreach ($grouped as $zoneName => $zoneRooms): ?>
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-geo-alt"></i> Khu vực: <strong><?= e($zoneName) ?></strong></span>
+      <span class="badge bg-light text-dark border"><?= count($zoneRooms) ?> phòng</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Mã phòng</th>
+            <th>Số phòng ngủ</th>
+            <th>Tầng</th>
+            <th>Loại phòng</th>
+            <th>Diện tích</th>
+            <th>Giá thuê tháng</th>
+            <th>Giá theo ngày</th>
+            <th>Trạng thái</th>
+            <th class="text-end">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($zoneRooms as $r): ?>
+            <tr>
+              <td class="fw-semibold"><?= e($r['room_code']) ?></td>
+              <td><?= (int)$r['bedrooms'] ?> PN</td>
+              <td><?= e($r['floor']) ?></td>
+              <td><?= e($r['room_type']) ?></td>
+              <td><?= $r['area_m2'] ? e($r['area_m2']) . ' m²' : '' ?></td>
+              <td><?= money($r['monthly_price']) ?></td>
+              <td><?= money($r['short_term_price']) ?>/đêm</td>
+              <td><span class="badge bg-<?= badge_class($r['status']) ?>"><?= e(ROOM_STATUS_LABELS[$r['status']] ?? $r['status']) ?></span></td>
+              <td class="text-end">
+                <a href="<?= url('/rooms/form.php?id=' . $r['id']) ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                <form method="post" action="<?= url('/rooms/delete.php') ?>" class="d-inline" data-confirm="Xóa phòng <?= e($r['room_code']) ?>?">
+                  <?= csrf_field() ?>
+                  <input type="hidden" name="id" value="<?= $r['id'] ?>">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<?php endforeach; ?>
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

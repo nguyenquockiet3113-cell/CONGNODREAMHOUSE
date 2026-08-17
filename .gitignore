@@ -1,0 +1,7 @@
+/config/db_credentials.php
+/database/local.sqlite
+/uploads/contracts/*
+!/uploads/contracts/.gitkeep
+.DS_Store
+Thumbs.db
+*.log
