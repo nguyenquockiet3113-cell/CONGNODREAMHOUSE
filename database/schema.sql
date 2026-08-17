@@ -89,6 +89,18 @@ CREATE TABLE IF NOT EXISTS contract_members (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
+-- Bang tai khoan ngan hang (dung de gan giao dich, doi soat)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS bank_accounts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    bank_name VARCHAR(150) NOT NULL,
+    account_number VARCHAR(50) DEFAULT NULL,
+    account_holder VARCHAR(150) DEFAULT NULL,
+    note VARCHAR(255) DEFAULT NULL,
+    created_at DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
 -- Bang hoa don hang thang - DOANH THU DAI HAN
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS invoices (
@@ -111,11 +123,14 @@ CREATE TABLE IF NOT EXISTS invoices (
     status VARCHAR(20) NOT NULL DEFAULT 'unpaid', -- unpaid | partial | paid
     due_date DATE DEFAULT NULL,
     paid_date DATE DEFAULT NULL,
+    bank_account_id INT DEFAULT NULL,
+    reconciled TINYINT(1) NOT NULL DEFAULT 0,
     note TEXT,
     created_at DATETIME NOT NULL,
     UNIQUE KEY uniq_contract_period (contract_id, period_month),
     CONSTRAINT fk_invoices_contract FOREIGN KEY (contract_id) REFERENCES contracts(id),
-    CONSTRAINT fk_invoices_room FOREIGN KEY (room_id) REFERENCES rooms(id)
+    CONSTRAINT fk_invoices_room FOREIGN KEY (room_id) REFERENCES rooms(id),
+    CONSTRAINT fk_invoices_bank FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
@@ -135,9 +150,13 @@ CREATE TABLE IF NOT EXISTS bookings (
     total_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     status VARCHAR(20) NOT NULL DEFAULT 'booked', -- booked | checked_in | checked_out | cancelled
     payment_status VARCHAR(20) NOT NULL DEFAULT 'unpaid', -- unpaid | paid
+    paid_date DATE DEFAULT NULL,
+    bank_account_id INT DEFAULT NULL,
+    reconciled TINYINT(1) NOT NULL DEFAULT 0,
     note TEXT,
     created_at DATETIME NOT NULL,
-    CONSTRAINT fk_bookings_room FOREIGN KEY (room_id) REFERENCES rooms(id)
+    CONSTRAINT fk_bookings_room FOREIGN KEY (room_id) REFERENCES rooms(id),
+    CONSTRAINT fk_bookings_bank FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
@@ -150,8 +169,49 @@ CREATE TABLE IF NOT EXISTS expenses (
     room_id INT DEFAULT NULL,
     amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     description VARCHAR(255) DEFAULT NULL,
+    bank_account_id INT DEFAULT NULL,
+    reconciled TINYINT(1) NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL,
-    CONSTRAINT fk_expenses_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL
+    CONSTRAINT fk_expenses_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL,
+    CONSTRAINT fk_expenses_bank FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
+-- Bang ticket bao tri / sua chua
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tickets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    room_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    priority VARCHAR(20) NOT NULL DEFAULT 'normal', -- low | normal | high
+    status VARCHAR(20) NOT NULL DEFAULT 'open', -- open | in_progress | resolved
+    reported_by VARCHAR(150) DEFAULT NULL,
+    resolution_note TEXT,
+    resolved_at DATETIME DEFAULT NULL,
+    created_at DATETIME NOT NULL,
+    CONSTRAINT fk_tickets_room FOREIGN KEY (room_id) REFERENCES rooms(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
+-- Bang nhac nho
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS reminders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    due_date DATE NOT NULL,
+    note TEXT,
+    is_done TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
+-- Bang cau hinh he thong (key-value), dung cho tich hop Google Sheets...
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS settings (
+    setting_key VARCHAR(100) PRIMARY KEY,
+    setting_value LONGTEXT,
+    updated_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 SET FOREIGN_KEY_CHECKS = 1;

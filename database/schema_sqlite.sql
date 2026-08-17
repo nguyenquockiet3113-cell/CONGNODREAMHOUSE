@@ -72,6 +72,15 @@ CREATE TABLE IF NOT EXISTS contract_members (
     FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS bank_accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bank_name VARCHAR(150) NOT NULL,
+    account_number VARCHAR(50),
+    account_holder VARCHAR(150),
+    note VARCHAR(255),
+    created_at DATETIME NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS invoices (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     contract_id INTEGER NOT NULL,
@@ -92,11 +101,14 @@ CREATE TABLE IF NOT EXISTS invoices (
     status VARCHAR(20) NOT NULL DEFAULT 'unpaid',
     due_date DATE,
     paid_date DATE,
+    bank_account_id INTEGER,
+    reconciled TINYINT NOT NULL DEFAULT 0,
     note TEXT,
     created_at DATETIME NOT NULL,
     UNIQUE (contract_id, period_month),
     FOREIGN KEY (contract_id) REFERENCES contracts(id),
-    FOREIGN KEY (room_id) REFERENCES rooms(id)
+    FOREIGN KEY (room_id) REFERENCES rooms(id),
+    FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS bookings (
@@ -113,9 +125,13 @@ CREATE TABLE IF NOT EXISTS bookings (
     total_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     status VARCHAR(20) NOT NULL DEFAULT 'booked',
     payment_status VARCHAR(20) NOT NULL DEFAULT 'unpaid',
+    paid_date DATE,
+    bank_account_id INTEGER,
+    reconciled TINYINT NOT NULL DEFAULT 0,
     note TEXT,
     created_at DATETIME NOT NULL,
-    FOREIGN KEY (room_id) REFERENCES rooms(id)
+    FOREIGN KEY (room_id) REFERENCES rooms(id),
+    FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS expenses (
@@ -125,8 +141,40 @@ CREATE TABLE IF NOT EXISTS expenses (
     room_id INTEGER,
     amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     description VARCHAR(255),
+    bank_account_id INTEGER,
+    reconciled TINYINT NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL,
-    FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL
+    FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL,
+    FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS tickets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_id INTEGER NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    priority VARCHAR(20) NOT NULL DEFAULT 'normal',
+    status VARCHAR(20) NOT NULL DEFAULT 'open',
+    reported_by VARCHAR(150),
+    resolution_note TEXT,
+    resolved_at DATETIME,
+    created_at DATETIME NOT NULL,
+    FOREIGN KEY (room_id) REFERENCES rooms(id)
+);
+
+CREATE TABLE IF NOT EXISTS reminders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title VARCHAR(255) NOT NULL,
+    due_date DATE NOT NULL,
+    note TEXT,
+    is_done TINYINT NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS settings (
+    setting_key VARCHAR(100) PRIMARY KEY,
+    setting_value TEXT,
+    updated_at DATETIME NOT NULL
 );
 
 INSERT OR IGNORE INTO users (id, full_name, username, password_hash, role, is_active, created_at)

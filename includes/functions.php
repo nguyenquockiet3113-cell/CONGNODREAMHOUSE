@@ -124,18 +124,50 @@ const BOOKING_STATUS_LABELS = [
     'cancelled' => 'Đã hủy',
 ];
 
-const EXPENSE_CATEGORIES = [
-    'Điện', 'Nước', 'Internet', 'Sửa chữa - Bảo trì', 'Vệ sinh',
-    'Lương nhân viên', 'Thuế - Phí nhà nước', 'Marketing', 'Khác',
+const TICKET_STATUS_LABELS = [
+    'open' => 'Mới báo',
+    'in_progress' => 'Đang xử lý',
+    'resolved' => 'Đã xong',
 ];
+
+const TICKET_PRIORITY_LABELS = [
+    'low' => 'Thấp',
+    'normal' => 'Bình thường',
+    'high' => 'Khẩn cấp',
+];
+
+const EXPENSE_CATEGORIES = [
+    'Điện', 'Nước', 'Phí quản lý', 'Phí thẻ/ngân hàng', 'Internet',
+    'Thuế - Mặt bằng', 'Lương', 'Sửa chữa', 'Rác', 'Vật tư', 'Khác',
+];
+
+function get_setting(PDO $pdo, string $key, string $default = ''): string
+{
+    $stmt = $pdo->prepare('SELECT setting_value FROM settings WHERE setting_key = ?');
+    $stmt->execute([$key]);
+    $row = $stmt->fetch();
+    return $row ? (string)$row['setting_value'] : $default;
+}
+
+function set_setting(PDO $pdo, string $key, string $value): void
+{
+    $now = date('Y-m-d H:i:s');
+    $existing = $pdo->prepare('SELECT setting_key FROM settings WHERE setting_key = ?');
+    $existing->execute([$key]);
+    if ($existing->fetch()) {
+        $pdo->prepare('UPDATE settings SET setting_value = ?, updated_at = ? WHERE setting_key = ?')->execute([$value, $now, $key]);
+    } else {
+        $pdo->prepare('INSERT INTO settings (setting_key, setting_value, updated_at) VALUES (?,?,?)')->execute([$key, $value, $now]);
+    }
+}
 
 function badge_class(string $status): string
 {
     return match ($status) {
-        'trong', 'active', 'paid', 'checked_out' => 'success',
-        'dang_thue', 'checked_in' => 'primary',
-        'bao_tri', 'partial', 'booked' => 'warning',
-        'ended', 'cancelled', 'unpaid' => 'secondary',
+        'trong', 'active', 'paid', 'checked_out', 'resolved' => 'success',
+        'dang_thue', 'checked_in', 'in_progress' => 'primary',
+        'bao_tri', 'partial', 'booked', 'open', 'high' => 'warning',
+        'ended', 'cancelled', 'unpaid', 'low' => 'secondary',
         default => 'secondary',
     };
 }

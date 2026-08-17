@@ -12,9 +12,10 @@ $invoice = [
     'water_old' => 0, 'water_new' => 0, 'water_price' => 20000,
     'service_fee' => 0, 'other_fee' => 0, 'other_fee_note' => '',
     'paid_amount' => 0, 'due_date' => date('Y-m-d', strtotime('+10 days')), 'paid_date' => '',
-    'note' => '',
+    'bank_account_id' => '', 'note' => '',
 ];
 $errors = [];
+$bankAccounts = $pdo->query('SELECT * FROM bank_accounts ORDER BY bank_name')->fetchAll();
 
 $contracts = $pdo->query(
     "SELECT c.id, c.contract_code, c.monthly_rent, c.electricity_price, c.water_price, c.service_fee,
@@ -70,6 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $invoice['paid_amount'] = (float)($_POST['paid_amount'] ?? 0);
     $invoice['due_date'] = $_POST['due_date'] ?: null;
     $invoice['paid_date'] = $_POST['paid_date'] ?: null;
+    $invoice['bank_account_id'] = ($_POST['bank_account_id'] ?? '') !== '' ? (int)$_POST['bank_account_id'] : null;
     $invoice['note'] = trim($_POST['note'] ?? '');
 
     if (!$invoice['contract_id']) $errors[] = 'Vui lòng chọn hợp đồng.';
@@ -98,27 +100,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             if ($id) {
                 $stmt = $pdo->prepare(
-                    'UPDATE invoices SET contract_id=?, room_id=?, period_month=?, rent_amount=?, electricity_old=?, electricity_new=?, electricity_price=?, water_old=?, water_new=?, water_price=?, service_fee=?, other_fee=?, other_fee_note=?, total_amount=?, paid_amount=?, status=?, due_date=?, paid_date=?, note=? WHERE id=?'
+                    'UPDATE invoices SET contract_id=?, room_id=?, period_month=?, rent_amount=?, electricity_old=?, electricity_new=?, electricity_price=?, water_old=?, water_new=?, water_price=?, service_fee=?, other_fee=?, other_fee_note=?, total_amount=?, paid_amount=?, status=?, due_date=?, paid_date=?, bank_account_id=?, note=? WHERE id=?'
                 );
                 $stmt->execute([
                     $invoice['contract_id'], $invoice['room_id'], $invoice['period_month'], $invoice['rent_amount'],
                     $invoice['electricity_old'], $invoice['electricity_new'], $invoice['electricity_price'],
                     $invoice['water_old'], $invoice['water_new'], $invoice['water_price'],
                     $invoice['service_fee'], $invoice['other_fee'], $invoice['other_fee_note'],
-                    $total, $invoice['paid_amount'], $status, $invoice['due_date'], $invoice['paid_date'], $invoice['note'], $id,
+                    $total, $invoice['paid_amount'], $status, $invoice['due_date'], $invoice['paid_date'],
+                    $invoice['bank_account_id'], $invoice['note'], $id,
                 ]);
                 flash('success', 'Đã cập nhật hóa đơn.');
             } else {
                 $now = date('Y-m-d H:i:s');
                 $stmt = $pdo->prepare(
-                    'INSERT INTO invoices (contract_id, room_id, period_month, rent_amount, electricity_old, electricity_new, electricity_price, water_old, water_new, water_price, service_fee, other_fee, other_fee_note, total_amount, paid_amount, status, due_date, paid_date, note, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                    'INSERT INTO invoices (contract_id, room_id, period_month, rent_amount, electricity_old, electricity_new, electricity_price, water_old, water_new, water_price, service_fee, other_fee, other_fee_note, total_amount, paid_amount, status, due_date, paid_date, bank_account_id, note, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
                 );
                 $stmt->execute([
                     $invoice['contract_id'], $invoice['room_id'], $invoice['period_month'], $invoice['rent_amount'],
                     $invoice['electricity_old'], $invoice['electricity_new'], $invoice['electricity_price'],
                     $invoice['water_old'], $invoice['water_new'], $invoice['water_price'],
                     $invoice['service_fee'], $invoice['other_fee'], $invoice['other_fee_note'],
-                    $total, $invoice['paid_amount'], $status, $invoice['due_date'], $invoice['paid_date'], $invoice['note'], $now,
+                    $total, $invoice['paid_amount'], $status, $invoice['due_date'], $invoice['paid_date'],
+                    $invoice['bank_account_id'], $invoice['note'], $now,
                 ]);
                 flash('success', 'Đã lập hóa đơn.');
             }
@@ -239,6 +243,15 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="col-md-4">
           <label class="form-label">Ngày thanh toán</label>
           <input type="date" name="paid_date" class="form-control" value="<?= e($invoice['paid_date']) ?>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Thu qua tài khoản</label>
+          <select name="bank_account_id" class="form-select">
+            <option value="">-- Tiền mặt / chưa chọn --</option>
+            <?php foreach ($bankAccounts as $ba): ?>
+              <option value="<?= $ba['id'] ?>" <?= (int)$invoice['bank_account_id'] === (int)$ba['id'] ? 'selected' : '' ?>><?= e($ba['bank_name']) ?><?= $ba['account_number'] ? ' - ' . e($ba['account_number']) : '' ?></option>
+            <?php endforeach; ?>
+          </select>
         </div>
         <div class="col-12">
           <label class="form-label">Ghi chú</label>

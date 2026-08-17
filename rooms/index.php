@@ -93,26 +93,17 @@ foreach ($rooms as $r) {
           <tr>
             <th>Mã phòng</th>
             <th>Số phòng ngủ</th>
-            <th>Tầng</th>
-            <th>Loại phòng</th>
-            <th>Diện tích</th>
-            <th>Giá thuê tháng</th>
-            <th>Giá theo ngày</th>
-            <th>Trạng thái</th>
             <th class="text-end">Thao tác</th>
           </tr>
         </thead>
         <tbody>
           <?php foreach ($zoneRooms as $r): ?>
             <tr>
-              <td class="fw-semibold"><?= e($r['room_code']) ?></td>
+              <td class="fw-semibold">
+                <span class="status-dot bg-<?= badge_class($r['status']) ?>" title="<?= e(ROOM_STATUS_LABELS[$r['status']] ?? $r['status']) ?>"></span>
+                <a href="<?= url('/rooms/form.php?id=' . $r['id']) ?>" class="text-decoration-none text-reset"><?= e($r['room_code']) ?></a>
+              </td>
               <td><?= (int)$r['bedrooms'] ?> PN</td>
-              <td><?= e($r['floor']) ?></td>
-              <td><?= e($r['room_type']) ?></td>
-              <td><?= $r['area_m2'] ? e($r['area_m2']) . ' m²' : '' ?></td>
-              <td><?= money($r['monthly_price']) ?></td>
-              <td><?= money($r['short_term_price']) ?>/đêm</td>
-              <td><span class="badge bg-<?= badge_class($r['status']) ?>"><?= e(ROOM_STATUS_LABELS[$r['status']] ?? $r['status']) ?></span></td>
               <td class="text-end">
                 <a href="<?= url('/rooms/form.php?id=' . $r['id']) ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
                 <form method="post" action="<?= url('/rooms/delete.php') ?>" class="d-inline" data-confirm="Xóa phòng <?= e($r['room_code']) ?>?">

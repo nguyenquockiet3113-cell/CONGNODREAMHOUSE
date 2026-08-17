@@ -11,6 +11,11 @@ Phần mềm quản lý cho thuê phòng / chung cư mini / căn hộ dịch v�
 - **Doanh thu ngắn hạn**: quản lý đặt phòng theo ngày/đêm (check-in/check-out), tính tiền tự động.
 - **Chi phí**: ghi nhận chi phí theo danh mục (điện, nước, sửa chữa, lương, ...), lọc theo tháng.
 - **Báo cáo**: doanh thu - chi phí - lợi nhuận theo tháng (6/12/24 tháng), cơ cấu chi phí, tỷ lệ lấp đầy phòng.
+- **Lịch phòng**: xem theo tháng phòng nào đang có khách ngắn hạn / hợp đồng dài hạn / bảo trì.
+- **Ticket bảo trì**: ghi nhận và theo dõi yêu cầu sửa chữa theo từng phòng.
+- **Nhắc nhở**: danh sách việc cần nhắc tự tạo, đánh dấu hoàn thành.
+- **Tài khoản ngân hàng & Đối soát**: gắn giao dịch thu/chi với tài khoản ngân hàng, đánh dấu đã đối soát với sao kê.
+- **Đồng bộ Google Sheets**: đẩy/kéo dữ liệu qua lại với Google Sheet (xem [`GOOGLE_SHEETS.md`](GOOGLE_SHEETS.md)).
 - **Tài khoản**: phân quyền Quản trị / Nhân viên.
 
 ## Cấu trúc thư mục

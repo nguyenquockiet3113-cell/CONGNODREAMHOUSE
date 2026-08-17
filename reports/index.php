@@ -13,11 +13,11 @@ for ($i = $monthsCount - 1; $i >= 0; $i--) {
 $rows = [];
 $sumRevenueLT = 0; $sumRevenueST = 0; $sumExpense = 0;
 foreach ($months as $m) {
-    $s1 = $pdo->prepare('SELECT COALESCE(SUM(paid_amount),0) s FROM invoices WHERE period_month = ?');
+    $s1 = $pdo->prepare("SELECT COALESCE(SUM(paid_amount),0) s FROM invoices WHERE paid_date IS NOT NULL AND substr(paid_date,1,7) = ?");
     $s1->execute([$m]);
     $lt = (float)$s1->fetch()['s'];
 
-    $s2 = $pdo->prepare("SELECT COALESCE(SUM(total_amount),0) s FROM bookings WHERE payment_status='paid' AND substr(checkin_date,1,7) = ?");
+    $s2 = $pdo->prepare("SELECT COALESCE(SUM(total_amount),0) s FROM bookings WHERE payment_status='paid' AND paid_date IS NOT NULL AND substr(paid_date,1,7) = ?");
     $s2->execute([$m]);
     $st = (float)$s2->fetch()['s'];
 

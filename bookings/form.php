@@ -7,9 +7,10 @@ $booking = [
     'id' => 0, 'room_id' => '', 'guest_name' => '', 'guest_phone' => '', 'guest_id_card' => '',
     'checkin_date' => date('Y-m-d'), 'checkout_date' => date('Y-m-d', strtotime('+1 day')),
     'price_per_night' => 0, 'deposit_amount' => 0, 'extra_fee' => 0, 'total_amount' => 0,
-    'status' => 'booked', 'payment_status' => 'unpaid', 'note' => '',
+    'status' => 'booked', 'payment_status' => 'unpaid', 'paid_date' => '', 'bank_account_id' => '', 'note' => '',
 ];
 $errors = [];
+$bankAccounts = $pdo->query('SELECT * FROM bank_accounts ORDER BY bank_name')->fetchAll();
 
 if ($id) {
     $stmt = $pdo->prepare('SELECT * FROM bookings WHERE id = ?');
@@ -37,6 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $booking['extra_fee'] = (float)($_POST['extra_fee'] ?? 0);
     $booking['status'] = $_POST['status'] ?? 'booked';
     $booking['payment_status'] = $_POST['payment_status'] ?? 'unpaid';
+    $booking['paid_date'] = $_POST['paid_date'] ?: null;
+    $booking['bank_account_id'] = ($_POST['bank_account_id'] ?? '') !== '' ? (int)$_POST['bank_account_id'] : null;
     $booking['note'] = trim($_POST['note'] ?? '');
 
     if (!$booking['room_id']) $errors[] = 'Vui lòng chọn phòng.';
@@ -54,24 +57,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($id) {
             $stmt = $pdo->prepare(
-                'UPDATE bookings SET room_id=?, guest_name=?, guest_phone=?, guest_id_card=?, checkin_date=?, checkout_date=?, price_per_night=?, deposit_amount=?, extra_fee=?, total_amount=?, status=?, payment_status=?, note=? WHERE id=?'
+                'UPDATE bookings SET room_id=?, guest_name=?, guest_phone=?, guest_id_card=?, checkin_date=?, checkout_date=?, price_per_night=?, deposit_amount=?, extra_fee=?, total_amount=?, status=?, payment_status=?, paid_date=?, bank_account_id=?, note=? WHERE id=?'
             );
             $stmt->execute([
                 $booking['room_id'], $booking['guest_name'], $booking['guest_phone'], $booking['guest_id_card'],
                 $booking['checkin_date'], $booking['checkout_date'], $booking['price_per_night'],
                 $booking['deposit_amount'], $booking['extra_fee'], $total, $booking['status'],
-                $booking['payment_status'], $booking['note'], $id,
+                $booking['payment_status'], $booking['paid_date'], $booking['bank_account_id'], $booking['note'], $id,
             ]);
             flash('success', 'Đã cập nhật đặt phòng.');
         } else {
             $stmt = $pdo->prepare(
-                'INSERT INTO bookings (room_id, guest_name, guest_phone, guest_id_card, checkin_date, checkout_date, price_per_night, deposit_amount, extra_fee, total_amount, status, payment_status, note, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                'INSERT INTO bookings (room_id, guest_name, guest_phone, guest_id_card, checkin_date, checkout_date, price_per_night, deposit_amount, extra_fee, total_amount, status, payment_status, paid_date, bank_account_id, note, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
             );
             $stmt->execute([
                 $booking['room_id'], $booking['guest_name'], $booking['guest_phone'], $booking['guest_id_card'],
                 $booking['checkin_date'], $booking['checkout_date'], $booking['price_per_night'],
                 $booking['deposit_amount'], $booking['extra_fee'], $total, $booking['status'],
-                $booking['payment_status'], $booking['note'], $now,
+                $booking['payment_status'], $booking['paid_date'], $booking['bank_account_id'], $booking['note'], $now,
             ]);
             flash('success', 'Đã thêm đặt phòng mới.');
         }
@@ -151,6 +154,19 @@ require_once __DIR__ . '/../includes/header.php';
           <select name="payment_status" class="form-select">
             <option value="unpaid" <?= $booking['payment_status'] === 'unpaid' ? 'selected' : '' ?>>Chưa thu</option>
             <option value="paid" <?= $booking['payment_status'] === 'paid' ? 'selected' : '' ?>>Đã thu</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Ngày thanh toán</label>
+          <input type="date" name="paid_date" class="form-control" value="<?= e($booking['paid_date']) ?>">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Thu qua tài khoản</label>
+          <select name="bank_account_id" class="form-select">
+            <option value="">-- Tiền mặt / chưa chọn --</option>
+            <?php foreach ($bankAccounts as $ba): ?>
+              <option value="<?= $ba['id'] ?>" <?= (int)$booking['bank_account_id'] === (int)$ba['id'] ? 'selected' : '' ?>><?= e($ba['bank_name']) ?></option>
+            <?php endforeach; ?>
           </select>
         </div>
         <div class="col-md-3 d-flex align-items-end">

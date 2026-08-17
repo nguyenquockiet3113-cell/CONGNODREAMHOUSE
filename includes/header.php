@@ -26,16 +26,27 @@ function nav_active(string $needle, string $path): string
       <span><?= APP_NAME ?></span>
     </div>
     <nav class="sidebar-nav">
-      <a href="<?= url('/dashboard.php') ?>" class="<?= nav_active('dashboard.php', $path) ?>"><i class="bi bi-speedometer2"></i> Dashboard</a>
-      <a href="<?= url('/rooms/index.php') ?>" class="<?= nav_active('/rooms/', $path) ?>"><i class="bi bi-door-closed"></i> Danh sách phòng</a>
+      <a href="<?= url('/dashboard.php') ?>" class="<?= nav_active('dashboard.php', $path) ?>"><i class="bi bi-speedometer2"></i> Tổng quan</a>
+
+      <div class="sidebar-section">Vận hành</div>
+      <a href="<?= url('/rooms/index.php') ?>" class="<?= nav_active('/rooms/', $path) ?>"><i class="bi bi-door-closed"></i> Khu &amp; Phòng</a>
       <a href="<?= url('/tenants/index.php') ?>" class="<?= nav_active('/tenants/', $path) ?>"><i class="bi bi-people"></i> Khách thuê</a>
       <a href="<?= url('/contracts/index.php') ?>" class="<?= nav_active('/contracts/', $path) ?>"><i class="bi bi-file-earmark-text"></i> Hợp đồng</a>
-      <a href="<?= url('/invoices/index.php') ?>" class="<?= nav_active('/invoices/', $path) ?>"><i class="bi bi-receipt"></i> Doanh thu dài hạn</a>
+      <a href="<?= url('/calendar/index.php') ?>" class="<?= nav_active('/calendar/', $path) ?>"><i class="bi bi-calendar3"></i> Lịch phòng</a>
+      <a href="<?= url('/tickets/index.php') ?>" class="<?= nav_active('/tickets/', $path) ?>"><i class="bi bi-tools"></i> Ticket bảo trì</a>
+
+      <div class="sidebar-section">Tài chính</div>
       <a href="<?= url('/bookings/index.php') ?>" class="<?= nav_active('/bookings/', $path) ?>"><i class="bi bi-calendar-check"></i> Doanh thu ngắn hạn</a>
+      <a href="<?= url('/invoices/index.php') ?>" class="<?= nav_active('/invoices/', $path) ?>"><i class="bi bi-receipt"></i> Doanh thu dài hạn</a>
       <a href="<?= url('/expenses/index.php') ?>" class="<?= nav_active('/expenses/', $path) ?>"><i class="bi bi-cash-coin"></i> Chi phí</a>
+      <a href="<?= url('/reconciliation/index.php') ?>" class="<?= nav_active('/reconciliation/', $path) ?>"><i class="bi bi-bank"></i> Đối soát ngân hàng</a>
       <a href="<?= url('/reports/index.php') ?>" class="<?= nav_active('/reports/', $path) ?>"><i class="bi bi-graph-up"></i> Báo cáo</a>
+
+      <div class="sidebar-section">Hệ thống</div>
+      <a href="<?= url('/reminders/index.php') ?>" class="<?= nav_active('/reminders/', $path) ?>"><i class="bi bi-bell"></i> Nhắc nhở</a>
       <?php if (is_admin()): ?>
       <a href="<?= url('/users/index.php') ?>" class="<?= nav_active('/users/', $path) ?>"><i class="bi bi-person-gear"></i> Tài khoản</a>
+      <a href="<?= url('/settings/index.php') ?>" class="<?= nav_active('/settings/', $path) ?>"><i class="bi bi-gear"></i> Cài đặt</a>
       <?php endif; ?>
     </nav>
   </aside>

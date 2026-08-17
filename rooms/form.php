@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $room['bedrooms'] = (int)($_POST['bedrooms'] ?? 1);
     $room['floor'] = trim($_POST['floor'] ?? '');
     $room['room_type'] = trim($_POST['room_type'] ?? '');
-    $room['area_m2'] = $_POST['area_m2'] !== '' ? (float)$_POST['area_m2'] : null;
+    $room['area_m2'] = ($_POST['area_m2'] ?? '') !== '' ? (float)$_POST['area_m2'] : null;
     $room['monthly_price'] = (float)($_POST['monthly_price'] ?? 0);
     $room['short_term_price'] = (float)($_POST['short_term_price'] ?? 0);
     $room['max_occupants'] = (int)($_POST['max_occupants'] ?? 1);

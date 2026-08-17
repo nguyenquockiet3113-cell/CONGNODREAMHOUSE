@@ -5,7 +5,7 @@ require_login();
 $id = (int)($_GET['id'] ?? 0);
 $expense = [
     'id' => 0, 'expense_date' => date('Y-m-d'), 'category' => EXPENSE_CATEGORIES[0],
-    'room_id' => '', 'amount' => '', 'description' => '',
+    'room_id' => '', 'amount' => '', 'description' => '', 'bank_account_id' => '',
 ];
 $errors = [];
 
@@ -21,14 +21,16 @@ if ($id) {
 }
 
 $rooms = $pdo->query('SELECT * FROM rooms ORDER BY room_code')->fetchAll();
+$bankAccounts = $pdo->query('SELECT * FROM bank_accounts ORDER BY bank_name')->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $expense['expense_date'] = $_POST['expense_date'] ?? '';
     $expense['category'] = trim($_POST['category'] ?? '');
-    $expense['room_id'] = $_POST['room_id'] !== '' ? (int)$_POST['room_id'] : null;
+    $expense['room_id'] = ($_POST['room_id'] ?? '') !== '' ? (int)$_POST['room_id'] : null;
     $expense['amount'] = (float)($_POST['amount'] ?? 0);
     $expense['description'] = trim($_POST['description'] ?? '');
+    $expense['bank_account_id'] = ($_POST['bank_account_id'] ?? '') !== '' ? (int)$_POST['bank_account_id'] : null;
 
     if (!$expense['expense_date']) $errors[] = 'Vui lòng chọn ngày chi.';
     if ($expense['category'] === '') $errors[] = 'Vui lòng chọn danh mục.';
@@ -37,12 +39,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$errors) {
         $now = date('Y-m-d H:i:s');
         if ($id) {
-            $stmt = $pdo->prepare('UPDATE expenses SET expense_date=?, category=?, room_id=?, amount=?, description=? WHERE id=?');
-            $stmt->execute([$expense['expense_date'], $expense['category'], $expense['room_id'], $expense['amount'], $expense['description'], $id]);
+            $stmt = $pdo->prepare('UPDATE expenses SET expense_date=?, category=?, room_id=?, amount=?, description=?, bank_account_id=? WHERE id=?');
+            $stmt->execute([$expense['expense_date'], $expense['category'], $expense['room_id'], $expense['amount'], $expense['description'], $expense['bank_account_id'], $id]);
             flash('success', 'Đã cập nhật chi phí.');
         } else {
-            $stmt = $pdo->prepare('INSERT INTO expenses (expense_date, category, room_id, amount, description, created_at) VALUES (?,?,?,?,?,?)');
-            $stmt->execute([$expense['expense_date'], $expense['category'], $expense['room_id'], $expense['amount'], $expense['description'], $now]);
+            $stmt = $pdo->prepare('INSERT INTO expenses (expense_date, category, room_id, amount, description, bank_account_id, created_at) VALUES (?,?,?,?,?,?,?)');
+            $stmt->execute([$expense['expense_date'], $expense['category'], $expense['room_id'], $expense['amount'], $expense['description'], $expense['bank_account_id'], $now]);
             flash('success', 'Đã thêm chi phí mới.');
         }
         redirect('/expenses/index.php');
@@ -87,6 +89,15 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="col-md-3">
           <label class="form-label">Số tiền (đ) *</label>
           <input type="number" step="1000" name="amount" class="form-control" required value="<?= e($expense['amount']) ?>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Chi qua tài khoản</label>
+          <select name="bank_account_id" class="form-select">
+            <option value="">-- Tiền mặt / chưa chọn --</option>
+            <?php foreach ($bankAccounts as $ba): ?>
+              <option value="<?= $ba['id'] ?>" <?= (int)$expense['bank_account_id'] === (int)$ba['id'] ? 'selected' : '' ?>><?= e($ba['bank_name']) ?></option>
+            <?php endforeach; ?>
+          </select>
         </div>
         <div class="col-12">
           <label class="form-label">Mô tả</label>
