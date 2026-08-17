@@ -18,58 +18,8 @@ CREATE TABLE IF NOT EXISTS rooms (
     room_code VARCHAR(50) NOT NULL UNIQUE,
     zone VARCHAR(150),
     bedrooms INTEGER NOT NULL DEFAULT 1,
-    floor VARCHAR(20),
-    room_type VARCHAR(100),
-    area_m2 DECIMAL(8,2),
-    monthly_price DECIMAL(14,0) NOT NULL DEFAULT 0,
-    short_term_price DECIMAL(14,0) NOT NULL DEFAULT 0,
-    max_occupants INTEGER NOT NULL DEFAULT 1,
-    status VARCHAR(20) NOT NULL DEFAULT 'trong',
-    description TEXT,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS tenants (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    full_name VARCHAR(150) NOT NULL,
-    phone VARCHAR(30),
-    email VARCHAR(150),
-    id_card_number VARCHAR(50),
-    id_card_address TEXT,
-    permanent_address TEXT,
-    note TEXT,
-    created_at DATETIME NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS contracts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    contract_code VARCHAR(50) NOT NULL UNIQUE,
-    room_id INTEGER NOT NULL,
-    tenant_id INTEGER NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    monthly_rent DECIMAL(14,0) NOT NULL DEFAULT 0,
-    deposit_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
-    deposit_returned TINYINT NOT NULL DEFAULT 0,
-    electricity_price DECIMAL(10,0) NOT NULL DEFAULT 3500,
-    water_price DECIMAL(10,0) NOT NULL DEFAULT 20000,
-    service_fee DECIMAL(14,0) NOT NULL DEFAULT 0,
-    status VARCHAR(20) NOT NULL DEFAULT 'active',
-    file_path VARCHAR(255),
-    note TEXT,
-    created_at DATETIME NOT NULL,
-    FOREIGN KEY (room_id) REFERENCES rooms(id),
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id)
-);
-
-CREATE TABLE IF NOT EXISTS contract_members (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    contract_id INTEGER NOT NULL,
-    full_name VARCHAR(150) NOT NULL,
-    phone VARCHAR(30),
-    id_card_number VARCHAR(50),
-    FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS bank_accounts (
@@ -81,57 +31,88 @@ CREATE TABLE IF NOT EXISTS bank_accounts (
     created_at DATETIME NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS invoices (
+CREATE TABLE IF NOT EXISTS contracts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    contract_id INTEGER NOT NULL,
-    room_id INTEGER NOT NULL,
-    period_month VARCHAR(7) NOT NULL,
-    rent_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
-    electricity_old DECIMAL(10,2) NOT NULL DEFAULT 0,
-    electricity_new DECIMAL(10,2) NOT NULL DEFAULT 0,
-    electricity_price DECIMAL(10,0) NOT NULL DEFAULT 0,
-    water_old DECIMAL(10,2) NOT NULL DEFAULT 0,
-    water_new DECIMAL(10,2) NOT NULL DEFAULT 0,
-    water_price DECIMAL(10,0) NOT NULL DEFAULT 0,
-    service_fee DECIMAL(14,0) NOT NULL DEFAULT 0,
-    other_fee DECIMAL(14,0) NOT NULL DEFAULT 0,
-    other_fee_note VARCHAR(255),
-    total_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
-    paid_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
-    status VARCHAR(20) NOT NULL DEFAULT 'unpaid',
-    due_date DATE,
-    paid_date DATE,
-    bank_account_id INTEGER,
-    reconciled TINYINT NOT NULL DEFAULT 0,
+    contract_code VARCHAR(50) NOT NULL UNIQUE,
+    room_code VARCHAR(50) NOT NULL,
+    zone VARCHAR(150),
+
+    lessee_name VARCHAR(150) NOT NULL,
+    lessee_dob DATE,
+    lessee_nationality VARCHAR(100),
+    lessee_id_number VARCHAR(50),
+    lessee_id_issue_date DATE,
+    lessee_id_issue_place VARCHAR(150),
+    lessee_address VARCHAR(255),
+    lessee_phone VARCHAR(30),
+    lessee_email VARCHAR(150),
+
+    lessor_name VARCHAR(150),
+    lessor_dob DATE,
+    lessor_id_number VARCHAR(50),
+    lessor_id_issue_date DATE,
+    lessor_id_issue_place VARCHAR(150),
+    lessor_address VARCHAR(255),
+
+    monthly_rent DECIMAL(14,0) NOT NULL DEFAULT 0,
+    rent_note VARCHAR(255),
+    deposit_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    checkin_time VARCHAR(10) DEFAULT '14:00',
+    checkout_time VARCHAR(10) DEFAULT '12:00',
+
+    payment_method VARCHAR(20) NOT NULL DEFAULT 'chuyen_khoan',
+    receiving_account VARCHAR(100),
+    bank_name VARCHAR(100),
+    beneficiary_name VARCHAR(150),
+    payment_note VARCHAR(255),
+
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    file_path VARCHAR(255),
     note TEXT,
-    created_at DATETIME NOT NULL,
-    UNIQUE (contract_id, period_month),
-    FOREIGN KEY (contract_id) REFERENCES contracts(id),
-    FOREIGN KEY (room_id) REFERENCES rooms(id),
-    FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL
+    created_at DATETIME NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS bookings (
+CREATE TABLE IF NOT EXISTS deals (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    room_id INTEGER NOT NULL,
+    room_code VARCHAR(50) NOT NULL,
+    bedrooms INTEGER,
+    zone VARCHAR(150),
     guest_name VARCHAR(150) NOT NULL,
-    guest_phone VARCHAR(30),
-    guest_id_card VARCHAR(50),
     checkin_date DATE NOT NULL,
     checkout_date DATE NOT NULL,
-    price_per_night DECIMAL(14,0) NOT NULL DEFAULT 0,
+    nights INTEGER NOT NULL DEFAULT 0,
+    deal_type VARCHAR(10) NOT NULL DEFAULT 'ngan_han',
+    price_per_unit DECIMAL(14,0) NOT NULL DEFAULT 0,
     deposit_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    deposit_date DATE,
     extra_fee DECIMAL(14,0) NOT NULL DEFAULT 0,
     total_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
-    status VARCHAR(20) NOT NULL DEFAULT 'booked',
+    payment_method VARCHAR(20) NOT NULL DEFAULT 'chuyen_khoan',
+    receiving_account VARCHAR(100),
+    paid_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     payment_status VARCHAR(20) NOT NULL DEFAULT 'unpaid',
-    paid_date DATE,
-    bank_account_id INTEGER,
     reconciled TINYINT NOT NULL DEFAULT 0,
     note TEXT,
     created_at DATETIME NOT NULL,
-    FOREIGN KEY (room_id) REFERENCES rooms(id),
-    FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL
+    updated_at DATETIME NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS deal_periods (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    deal_id INTEGER NOT NULL,
+    period_index INTEGER NOT NULL,
+    period_start DATE NOT NULL,
+    period_end DATE NOT NULL,
+    rent_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    deposit_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    utilities_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    paid_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    reconciled TINYINT NOT NULL DEFAULT 0,
+    note VARCHAR(255),
+    FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS expenses (
@@ -148,18 +129,18 @@ CREATE TABLE IF NOT EXISTS expenses (
     FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL
 );
 
-CREATE TABLE IF NOT EXISTS tickets (
+CREATE TABLE IF NOT EXISTS cleaning_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    room_id INTEGER NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    priority VARCHAR(20) NOT NULL DEFAULT 'normal',
-    status VARCHAR(20) NOT NULL DEFAULT 'open',
-    reported_by VARCHAR(150),
-    resolution_note TEXT,
-    resolved_at DATETIME,
-    created_at DATETIME NOT NULL,
-    FOREIGN KEY (room_id) REFERENCES rooms(id)
+    work_date DATE NOT NULL,
+    staff_name VARCHAR(150) NOT NULL,
+    room_code VARCHAR(50),
+    bedrooms INTEGER,
+    work_item VARCHAR(150),
+    work_type VARCHAR(100),
+    price DECIMAL(14,0) NOT NULL DEFAULT 0,
+    plus DECIMAL(14,0) NOT NULL DEFAULT 0,
+    note VARCHAR(255),
+    created_at DATETIME NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS reminders (

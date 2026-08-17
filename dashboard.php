@@ -8,7 +8,6 @@ $filterZone = trim($_GET['zone'] ?? '');
 $filterRoomCode = trim($_GET['room_code'] ?? '');
 $filterMonth = trim($_GET['month'] ?? date('Y-m'));
 if (!preg_match('/^\d{4}-\d{2}$/', $filterMonth)) $filterMonth = date('Y-m');
-$filterBank = $_GET['bank_account_id'] ?? '';
 $alertDays = (int)($_GET['alert_days'] ?? 21);
 if ($alertDays <= 0) $alertDays = 21;
 
@@ -18,44 +17,47 @@ $fromDate = $_GET['from'] ?? $monthFirst;
 $toDate = $_GET['to'] ?? $monthLast;
 
 $zones = $pdo->query("SELECT DISTINCT zone FROM rooms WHERE zone IS NOT NULL AND zone != '' ORDER BY zone")->fetchAll(PDO::FETCH_COLUMN);
-$bankAccounts = $pdo->query('SELECT * FROM bank_accounts ORDER BY bank_name')->fetchAll();
 
-function apply_room_filters(string $sql, array &$params, string $roomAlias, string $zone, string $roomCode): string
+function apply_deal_filters(string $sql, array &$params, string $zone, string $roomCode): string
 {
-    if ($zone !== '') { $sql .= " AND $roomAlias.zone = ?"; $params[] = $zone; }
-    if ($roomCode !== '') { $sql .= " AND $roomAlias.room_code LIKE ?"; $params[] = "%$roomCode%"; }
+    if ($zone !== '') { $sql .= ' AND zone = ?'; $params[] = $zone; }
+    if ($roomCode !== '') { $sql .= ' AND room_code LIKE ?'; $params[] = "%$roomCode%"; }
     return $sql;
 }
 
-// --- Thong ke phong (ap dung filter khu vuc/ma can, khong theo ngay) ---
-$roomSql = 'SELECT status, COUNT(*) c FROM rooms WHERE 1=1';
+// --- Thong ke phong (trong / dang o) ---
+$roomSql = 'SELECT * FROM rooms WHERE 1=1';
 $roomParams = [];
-$roomSql = apply_room_filters($roomSql, $roomParams, 'rooms', $filterZone, $filterRoomCode);
-$roomSql .= ' GROUP BY status';
+if ($filterZone !== '') { $roomSql .= ' AND zone = ?'; $roomParams[] = $filterZone; }
+if ($filterRoomCode !== '') { $roomSql .= ' AND room_code LIKE ?'; $roomParams[] = "%$filterRoomCode%"; }
 $stmt = $pdo->prepare($roomSql);
 $stmt->execute($roomParams);
-$roomStats = ['trong' => 0, 'dang_thue' => 0, 'bao_tri' => 0];
-foreach ($stmt->fetchAll() as $row) { $roomStats[$row['status']] = (int)$row['c']; }
-$totalRooms = array_sum($roomStats);
-$occupancyRate = $totalRooms > 0 ? round($roomStats['dang_thue'] / $totalRooms * 100, 1) : 0;
+$allRooms = $stmt->fetchAll();
+$totalRooms = count($allRooms);
 
-// --- Doanh thu dai han da thu trong khoang loc (theo paid_date) ---
-$sql = "SELECT COALESCE(SUM(i.paid_amount),0) s FROM invoices i JOIN rooms r ON r.id = i.room_id
-        WHERE i.paid_date IS NOT NULL AND i.paid_date BETWEEN ? AND ?";
-$params = [$fromDate, $toDate];
-$sql = apply_room_filters($sql, $params, 'r', $filterZone, $filterRoomCode);
-if ($filterBank !== '') { $sql .= ' AND i.bank_account_id = ?'; $params[] = $filterBank; }
-$stmt = $pdo->prepare($sql); $stmt->execute($params);
-$longTermRevenue = (float)$stmt->fetch()['s'];
+$occStmt = $pdo->prepare('SELECT DISTINCT room_code FROM deals WHERE checkin_date <= ? AND checkout_date > ?');
+$occStmt->execute([$today, $today]);
+$occupiedSet = array_flip($occStmt->fetchAll(PDO::FETCH_COLUMN));
+$occupiedCount = 0;
+foreach ($allRooms as $r) { if (isset($occupiedSet[$r['room_code']])) $occupiedCount++; }
+$vacantCount = $totalRooms - $occupiedCount;
+$occupancyRate = $totalRooms > 0 ? round($occupiedCount / $totalRooms * 100, 1) : 0;
 
-// --- Doanh thu ngan han da thu trong khoang loc (theo paid_date) ---
-$sql = "SELECT COALESCE(SUM(b.total_amount),0) s FROM bookings b JOIN rooms r ON r.id = b.room_id
-        WHERE b.payment_status = 'paid' AND b.paid_date IS NOT NULL AND b.paid_date BETWEEN ? AND ?";
+// --- Doanh thu ngan han da thu trong khoang loc (theo ngay check-in) ---
+$sql = "SELECT COALESCE(SUM(paid_amount),0) s FROM deals WHERE deal_type = 'ngan_han' AND checkin_date BETWEEN ? AND ?";
 $params = [$fromDate, $toDate];
-$sql = apply_room_filters($sql, $params, 'r', $filterZone, $filterRoomCode);
-if ($filterBank !== '') { $sql .= ' AND b.bank_account_id = ?'; $params[] = $filterBank; }
+$sql = apply_deal_filters($sql, $params, $filterZone, $filterRoomCode);
 $stmt = $pdo->prepare($sql); $stmt->execute($params);
 $shortTermRevenue = (float)$stmt->fetch()['s'];
+
+// --- Doanh thu dai han da thu trong khoang loc (theo ky, period_start) ---
+$sql = "SELECT COALESCE(SUM(dp.paid_amount),0) s FROM deal_periods dp JOIN deals d ON d.id = dp.deal_id
+        WHERE d.deal_type = 'dai_han' AND dp.period_start BETWEEN ? AND ?";
+$params = [$fromDate, $toDate];
+if ($filterZone !== '') { $sql .= ' AND d.zone = ?'; $params[] = $filterZone; }
+if ($filterRoomCode !== '') { $sql .= ' AND d.room_code LIKE ?'; $params[] = "%$filterRoomCode%"; }
+$stmt = $pdo->prepare($sql); $stmt->execute($params);
+$longTermRevenue = (float)$stmt->fetch()['s'];
 
 // --- Chi phi trong khoang loc ---
 $sql = "SELECT COALESCE(SUM(ex.amount),0) s FROM expenses ex LEFT JOIN rooms r ON r.id = ex.room_id
@@ -63,51 +65,39 @@ $sql = "SELECT COALESCE(SUM(ex.amount),0) s FROM expenses ex LEFT JOIN rooms r O
 $params = [$fromDate, $toDate];
 if ($filterZone !== '') { $sql .= ' AND r.zone = ?'; $params[] = $filterZone; }
 if ($filterRoomCode !== '') { $sql .= ' AND r.room_code LIKE ?'; $params[] = "%$filterRoomCode%"; }
-if ($filterBank !== '') { $sql .= ' AND ex.bank_account_id = ?'; $params[] = $filterBank; }
 $stmt = $pdo->prepare($sql); $stmt->execute($params);
 $periodExpense = (float)$stmt->fetch()['s'];
 
 $periodRevenue = $longTermRevenue + $shortTermRevenue;
 $periodProfit = $periodRevenue - $periodExpense;
 
-// --- No ton dong (hoa don chua thu du, khong phu thuoc khoang ngay) ---
-$sql = "SELECT COALESCE(SUM(i.total_amount - i.paid_amount),0) s FROM invoices i JOIN rooms r ON r.id = i.room_id WHERE i.status != 'paid'";
+// --- No ton dong ---
+$sql = "SELECT COALESCE(SUM(total_amount - paid_amount),0) s FROM deals WHERE deal_type = 'ngan_han' AND payment_status != 'paid'";
 $params = [];
-$sql = apply_room_filters($sql, $params, 'r', $filterZone, $filterRoomCode);
+$sql = apply_deal_filters($sql, $params, $filterZone, $filterRoomCode);
 $stmt = $pdo->prepare($sql); $stmt->execute($params);
-$totalOwed = (float)$stmt->fetch()['s'];
+$owedShort = (float)$stmt->fetch()['s'];
+
+$sql = "SELECT COALESCE(SUM(dp.rent_amount + dp.deposit_amount + dp.utilities_amount - dp.paid_amount),0) s
+        FROM deal_periods dp JOIN deals d ON d.id = dp.deal_id WHERE d.deal_type = 'dai_han'";
+$params = [];
+if ($filterZone !== '') { $sql .= ' AND d.zone = ?'; $params[] = $filterZone; }
+if ($filterRoomCode !== '') { $sql .= ' AND d.room_code LIKE ?'; $params[] = "%$filterRoomCode%"; }
+$stmt = $pdo->prepare($sql); $stmt->execute($params);
+$owedLong = (float)$stmt->fetch()['s'];
+$totalOwed = $owedShort + $owedLong;
 
 // --- Hop dong sap het han ---
-$sql = "SELECT c.*, r.room_code, t.full_name AS tenant_name FROM contracts c
-        JOIN rooms r ON r.id = c.room_id JOIN tenants t ON t.id = c.tenant_id
-        WHERE c.status = 'active' AND c.end_date >= ? AND c.end_date <= ?";
+$sql = "SELECT * FROM contracts WHERE status = 'active' AND end_date >= ? AND end_date <= ?";
 $params = [$today, date('Y-m-d', strtotime("+$alertDays days"))];
-$sql = apply_room_filters($sql, $params, 'r', $filterZone, $filterRoomCode);
-$sql .= ' ORDER BY c.end_date ASC';
+if ($filterZone !== '') { $sql .= ' AND zone = ?'; $params[] = $filterZone; }
+if ($filterRoomCode !== '') { $sql .= ' AND room_code LIKE ?'; $params[] = "%$filterRoomCode%"; }
+$sql .= ' ORDER BY end_date ASC';
 $stmt = $pdo->prepare($sql); $stmt->execute($params);
 $expiringContracts = $stmt->fetchAll();
 
-// --- Hoa don chua thanh toan (danh sach) ---
-$sql = "SELECT i.*, r.room_code, t.full_name AS tenant_name FROM invoices i
-        JOIN rooms r ON r.id = i.room_id JOIN contracts c ON c.id = i.contract_id JOIN tenants t ON t.id = c.tenant_id
-        WHERE i.status != 'paid'";
-$params = [];
-$sql = apply_room_filters($sql, $params, 'r', $filterZone, $filterRoomCode);
-$sql .= ' ORDER BY i.due_date ASC LIMIT 8';
-$stmt = $pdo->prepare($sql); $stmt->execute($params);
-$unpaidInvoices = $stmt->fetchAll();
-
-// --- Ticket bao tri dang mo ---
-$sql = "SELECT tk.*, r.room_code FROM tickets tk JOIN rooms r ON r.id = tk.room_id WHERE tk.status != 'resolved'";
-$params = [];
-$sql = apply_room_filters($sql, $params, 'r', $filterZone, $filterRoomCode);
-$sql .= ' ORDER BY tk.created_at DESC LIMIT 8';
-$stmt = $pdo->prepare($sql); $stmt->execute($params);
-$openTickets = $stmt->fetchAll();
-$openTicketsCount = count($openTickets);
-
 // --- Nhac nho sap toi (7 ngay, chua hoan thanh) ---
-$stmt = $pdo->prepare("SELECT * FROM reminders WHERE is_done = 0 AND due_date <= ? ORDER BY due_date ASC LIMIT 6");
+$stmt = $pdo->prepare('SELECT * FROM reminders WHERE is_done = 0 AND due_date <= ? ORDER BY due_date ASC LIMIT 6');
 $stmt->execute([date('Y-m-d', strtotime('+7 days'))]);
 $upcomingReminders = $stmt->fetchAll();
 
@@ -119,15 +109,15 @@ $chartExpense = [];
 foreach ($months as $m) {
     $mf = $m . '-01'; $ml = date('Y-m-d', strtotime($mf . ' +1 month -1 day'));
 
-    $s1 = $pdo->prepare("SELECT COALESCE(SUM(paid_amount),0) s FROM invoices WHERE paid_date BETWEEN ? AND ?");
+    $s1 = $pdo->prepare("SELECT COALESCE(SUM(paid_amount),0) s FROM deals WHERE deal_type='ngan_han' AND checkin_date BETWEEN ? AND ?");
     $s1->execute([$mf, $ml]);
-    $lt = (float)$s1->fetch()['s'];
+    $st = (float)$s1->fetch()['s'];
 
-    $s2 = $pdo->prepare("SELECT COALESCE(SUM(total_amount),0) s FROM bookings WHERE payment_status='paid' AND paid_date BETWEEN ? AND ?");
+    $s2 = $pdo->prepare("SELECT COALESCE(SUM(dp.paid_amount),0) s FROM deal_periods dp JOIN deals d ON d.id=dp.deal_id WHERE d.deal_type='dai_han' AND dp.period_start BETWEEN ? AND ?");
     $s2->execute([$mf, $ml]);
-    $st = (float)$s2->fetch()['s'];
+    $lt = (float)$s2->fetch()['s'];
 
-    $s3 = $pdo->prepare("SELECT COALESCE(SUM(amount),0) s FROM expenses WHERE expense_date BETWEEN ? AND ?");
+    $s3 = $pdo->prepare('SELECT COALESCE(SUM(amount),0) s FROM expenses WHERE expense_date BETWEEN ? AND ?');
     $s3->execute([$mf, $ml]);
     $ex = (float)$s3->fetch()['s'];
 
@@ -144,7 +134,7 @@ require_once __DIR__ . '/includes/header.php';
   <div class="card-body">
     <div class="text-uppercase small text-muted mb-2" style="letter-spacing:.05em;"><i class="bi bi-funnel"></i> Bộ lọc</div>
     <form class="row g-2 align-items-end">
-      <div class="col-sm-6 col-lg-2">
+      <div class="col-sm-6 col-lg-3">
         <label class="form-label small mb-1">Khu vực</label>
         <select name="zone" class="form-select">
           <option value="">-- Tất cả --</option>
@@ -153,22 +143,13 @@ require_once __DIR__ . '/includes/header.php';
           <?php endforeach; ?>
         </select>
       </div>
-      <div class="col-sm-6 col-lg-2">
+      <div class="col-sm-6 col-lg-3">
         <label class="form-label small mb-1">Mã căn</label>
         <input type="text" name="room_code" class="form-control" placeholder="VD: A0101" value="<?= e($filterRoomCode) ?>">
       </div>
       <div class="col-sm-6 col-lg-2">
         <label class="form-label small mb-1">Tháng / Năm</label>
         <input type="month" name="month" class="form-control" value="<?= e($filterMonth) ?>">
-      </div>
-      <div class="col-sm-6 col-lg-2">
-        <label class="form-label small mb-1">TK Ngân hàng</label>
-        <select name="bank_account_id" class="form-select">
-          <option value="">-- Tất cả --</option>
-          <?php foreach ($bankAccounts as $ba): ?>
-            <option value="<?= $ba['id'] ?>" <?= (string)$filterBank === (string)$ba['id'] ? 'selected' : '' ?>><?= e($ba['bank_name']) ?></option>
-          <?php endforeach; ?>
-        </select>
       </div>
       <div class="col-sm-6 col-lg-2">
         <label class="form-label small mb-1">Từ ngày</label>
@@ -208,23 +189,17 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <div class="row g-3 mb-3">
-  <div class="col-sm-6 col-lg-2">
+  <div class="col-sm-6 col-lg-3">
     <div class="stat-card"><div class="text-muted small">Nợ tồn đọng</div><div class="stat-value text-danger" style="font-size:1.15rem;"><?= money($totalOwed) ?></div></div>
   </div>
-  <div class="col-sm-6 col-lg-2">
-    <div class="stat-card"><div class="text-muted small"><i class="bi bi-door-open"></i> Trống</div><div class="stat-value"><?= $roomStats['trong'] ?></div></div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card"><div class="text-muted small"><i class="bi bi-door-open"></i> Trống</div><div class="stat-value"><?= $vacantCount ?></div></div>
   </div>
-  <div class="col-sm-6 col-lg-2">
-    <div class="stat-card"><div class="text-muted small"><i class="bi bi-door-closed-fill"></i> Đang ở</div><div class="stat-value"><?= $roomStats['dang_thue'] ?></div></div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card"><div class="text-muted small"><i class="bi bi-door-closed-fill"></i> Đang ở</div><div class="stat-value"><?= $occupiedCount ?></div></div>
   </div>
-  <div class="col-sm-6 col-lg-2">
-    <div class="stat-card"><div class="text-muted small"><i class="bi bi-tools"></i> Đang sửa</div><div class="stat-value"><?= $roomStats['bao_tri'] ?></div></div>
-  </div>
-  <div class="col-sm-6 col-lg-2">
+  <div class="col-sm-6 col-lg-3">
     <div class="stat-card"><div class="text-muted small">HĐ sắp hết hạn</div><div class="stat-value text-warning"><?= count($expiringContracts) ?></div></div>
-  </div>
-  <div class="col-sm-6 col-lg-2">
-    <div class="stat-card"><div class="text-muted small"><i class="bi bi-tools"></i> Ticket đang mở</div><div class="stat-value <?= $openTicketsCount > 0 ? 'text-warning' : '' ?>"><?= $openTicketsCount ?></div></div>
   </div>
 </div>
 
@@ -248,33 +223,32 @@ require_once __DIR__ . '/includes/header.php';
       </div>
       <div class="card-body">
         <div class="fs-1 fw-bold"><?= $occupancyRate ?>%</div>
-        <div class="small text-muted mb-2"><?= $roomStats['dang_thue'] ?>/<?= $totalRooms ?> phòng đang ở</div>
+        <div class="small text-muted mb-2"><?= $occupiedCount ?>/<?= $totalRooms ?> phòng đang ở</div>
         <div class="progress mb-3" style="height:8px;">
           <div class="progress-bar bg-success" style="width: <?= $occupancyRate ?>%"></div>
         </div>
         <ul class="list-unstyled small mb-0">
-          <li><span class="status-dot bg-success"></span> Trống <span class="float-end"><?= $roomStats['trong'] ?></span></li>
-          <li><span class="status-dot bg-primary"></span> Đang ở <span class="float-end"><?= $roomStats['dang_thue'] ?></span></li>
-          <li><span class="status-dot bg-warning"></span> Đang sửa <span class="float-end"><?= $roomStats['bao_tri'] ?></span></li>
+          <li><span class="status-dot bg-success"></span> Trống <span class="float-end"><?= $vacantCount ?></span></li>
+          <li><span class="status-dot bg-primary"></span> Đang ở <span class="float-end"><?= $occupiedCount ?></span></li>
         </ul>
       </div>
     </div>
   </div>
 </div>
 
-<div class="row g-3 mb-3">
-  <div class="col-lg-4">
+<div class="row g-3">
+  <div class="col-lg-6">
     <div class="card h-100">
       <div class="card-header">Hợp đồng sắp hết hạn (<?= $alertDays ?> ngày tới)</div>
-      <div class="list-group list-group-flush" style="max-height:280px;overflow-y:auto;">
+      <div class="list-group list-group-flush" style="max-height:320px;overflow-y:auto;">
         <?php if (!$expiringContracts): ?>
           <div class="list-group-item text-muted small">Không có hợp đồng nào sắp hết hạn.</div>
         <?php endif; ?>
         <?php foreach ($expiringContracts as $c): ?>
           <a href="<?= url('/contracts/view.php?id=' . $c['id']) ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
             <div>
-              <div class="fw-semibold"><?= e($c['room_code']) ?> - <?= e($c['tenant_name']) ?></div>
-              <div class="small text-muted">Mã HĐ <?= e($c['contract_code']) ?></div>
+              <div class="fw-semibold"><?= e($c['room_code']) ?> - <?= e($c['lessee_name']) ?></div>
+              <div class="small text-muted">Số HĐ <?= e($c['contract_code']) ?></div>
             </div>
             <span class="badge bg-warning">Còn <?= max(0, (int)((strtotime($c['end_date']) - strtotime($today)) / 86400)) ?> ngày</span>
           </a>
@@ -282,35 +256,13 @@ require_once __DIR__ . '/includes/header.php';
       </div>
     </div>
   </div>
-  <div class="col-lg-4">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between">
-        <span>Ticket bảo trì đang mở</span>
-        <a href="<?= url('/tickets/index.php') ?>" class="small text-decoration-none">Xem tất cả</a>
-      </div>
-      <div class="list-group list-group-flush" style="max-height:280px;overflow-y:auto;">
-        <?php if (!$openTickets): ?>
-          <div class="list-group-item text-muted small">Không có ticket nào đang mở.</div>
-        <?php endif; ?>
-        <?php foreach ($openTickets as $t): ?>
-          <a href="<?= url('/tickets/form.php?id=' . $t['id']) ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-            <div>
-              <div class="fw-semibold"><?= e($t['room_code']) ?> - <?= e($t['title']) ?></div>
-              <div class="small text-muted"><?= vndate(substr($t['created_at'], 0, 10)) ?></div>
-            </div>
-            <span class="badge bg-<?= badge_class($t['status']) ?>"><?= e(TICKET_STATUS_LABELS[$t['status']] ?? '') ?></span>
-          </a>
-        <?php endforeach; ?>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-4">
+  <div class="col-lg-6">
     <div class="card h-100">
       <div class="card-header d-flex justify-content-between">
         <span>Nhắc nhở</span>
         <a href="<?= url('/reminders/index.php') ?>" class="small text-decoration-none">Xem tất cả</a>
       </div>
-      <div class="list-group list-group-flush" style="max-height:280px;overflow-y:auto;">
+      <div class="list-group list-group-flush" style="max-height:320px;overflow-y:auto;">
         <?php if (!$upcomingReminders): ?>
           <div class="list-group-item text-muted small">Không có nhắc nhở nào sắp tới.</div>
         <?php endif; ?>
@@ -322,27 +274,6 @@ require_once __DIR__ . '/includes/header.php';
         <?php endforeach; ?>
       </div>
     </div>
-  </div>
-</div>
-
-<div class="card mb-3">
-  <div class="card-header d-flex justify-content-between">
-    <span>Hóa đơn chưa thanh toán</span>
-    <span class="text-danger fw-semibold"><?= money($totalOwed) ?></span>
-  </div>
-  <div class="list-group list-group-flush" style="max-height:280px;overflow-y:auto;">
-    <?php if (!$unpaidInvoices): ?>
-      <div class="list-group-item text-muted small">Không có hóa đơn tồn đọng.</div>
-    <?php endif; ?>
-    <?php foreach ($unpaidInvoices as $inv): ?>
-      <a href="<?= url('/invoices/form.php?id=' . $inv['id']) ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-        <div>
-          <div class="fw-semibold"><?= e($inv['room_code']) ?> - <?= e($inv['tenant_name']) ?></div>
-          <div class="small text-muted">Kỳ <?= e($inv['period_month']) ?> · Hạn <?= vndate($inv['due_date']) ?></div>
-        </div>
-        <span class="badge bg-<?= badge_class($inv['status']) ?>"><?= money($inv['total_amount'] - $inv['paid_amount']) ?></span>
-      </a>
-    <?php endforeach; ?>
   </div>
 </div>
 

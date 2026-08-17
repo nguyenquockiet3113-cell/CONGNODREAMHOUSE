@@ -30,15 +30,13 @@ function nav_active(string $needle, string $path): string
 
       <div class="sidebar-section">Vận hành</div>
       <a href="<?= url('/rooms/index.php') ?>" class="<?= nav_active('/rooms/', $path) ?>"><i class="bi bi-door-closed"></i> Khu &amp; Phòng</a>
-      <a href="<?= url('/tenants/index.php') ?>" class="<?= nav_active('/tenants/', $path) ?>"><i class="bi bi-people"></i> Khách thuê</a>
       <a href="<?= url('/contracts/index.php') ?>" class="<?= nav_active('/contracts/', $path) ?>"><i class="bi bi-file-earmark-text"></i> Hợp đồng</a>
-      <a href="<?= url('/calendar/index.php') ?>" class="<?= nav_active('/calendar/', $path) ?>"><i class="bi bi-calendar3"></i> Lịch phòng</a>
-      <a href="<?= url('/tickets/index.php') ?>" class="<?= nav_active('/tickets/', $path) ?>"><i class="bi bi-tools"></i> Ticket bảo trì</a>
 
       <div class="sidebar-section">Tài chính</div>
-      <a href="<?= url('/bookings/index.php') ?>" class="<?= nav_active('/bookings/', $path) ?>"><i class="bi bi-calendar-check"></i> Doanh thu ngắn hạn</a>
-      <a href="<?= url('/invoices/index.php') ?>" class="<?= nav_active('/invoices/', $path) ?>"><i class="bi bi-receipt"></i> Doanh thu dài hạn</a>
+      <a href="<?= url('/deals/short.php') ?>" class="<?= nav_active('/deals/short', $path) ?>"><i class="bi bi-calendar-check"></i> Doanh thu ngắn hạn</a>
+      <a href="<?= url('/deals/long.php') ?>" class="<?= nav_active('/deals/long', $path) ?>"><i class="bi bi-receipt"></i> Doanh thu dài hạn</a>
       <a href="<?= url('/expenses/index.php') ?>" class="<?= nav_active('/expenses/', $path) ?>"><i class="bi bi-cash-coin"></i> Chi phí</a>
+      <a href="<?= url('/cleaning/index.php') ?>" class="<?= nav_active('/cleaning/', $path) ?>"><i class="bi bi-bucket"></i> Tiền lương vệ sinh</a>
       <a href="<?= url('/reconciliation/index.php') ?>" class="<?= nav_active('/reconciliation/', $path) ?>"><i class="bi bi-bank"></i> Đối soát ngân hàng</a>
       <a href="<?= url('/reports/index.php') ?>" class="<?= nav_active('/reports/', $path) ?>"><i class="bi bi-graph-up"></i> Báo cáo</a>
 

@@ -4,15 +4,13 @@ Phần mềm quản lý cho thuê phòng / chung cư mini / căn hộ dịch v�
 
 ## Tính năng
 
-- **Dashboard**: tổng quan số phòng, doanh thu/chi phí tháng, lợi nhuận, hợp đồng sắp hết hạn, hóa đơn chưa thu, biểu đồ 6 tháng gần nhất.
-- **Danh sách phòng**: quản lý phòng theo **khu vực** (VD: Vinhomes Central Park, Vinhomes Grand Park), số phòng ngủ, diện tích, giá thuê tháng/ngày, trạng thái (trống / đang thuê / bảo trì).
-- **Khách thuê & Hợp đồng**: hồ sơ khách thuê, hợp đồng dài hạn gắn với phòng, tiền cọc, đơn giá điện/nước, người ở cùng, đính kèm file hợp đồng, tự động cập nhật trạng thái phòng.
-- **Doanh thu dài hạn**: lập hóa đơn hàng tháng theo hợp đồng (tiền phòng + điện nước theo chỉ số + phí dịch vụ), theo dõi thanh toán.
-- **Doanh thu ngắn hạn**: quản lý đặt phòng theo ngày/đêm (check-in/check-out), tính tiền tự động.
-- **Chi phí**: ghi nhận chi phí theo danh mục (điện, nước, sửa chữa, lương, ...), lọc theo tháng.
+- **Dashboard**: tổng quan số phòng, doanh thu/chi phí tháng, lợi nhuận, hợp đồng sắp hết hạn, nợ tồn đọng, biểu đồ 6 tháng gần nhất.
+- **Khu & Phòng**: danh mục phòng tối giản theo **khu vực** (VD: Vinhomes Central Park), mã phòng, số phòng ngủ. Mã phòng có thể tự nhập tay ở các form khác, không bắt buộc phải có sẵn trong danh mục.
+- **Hợp đồng**: hồ sơ pháp lý theo đúng mẫu hợp đồng thuê thực tế (bên thuê, bên cho thuê, tiền thuê/cọc, thời hạn, hình thức thanh toán), đính kèm file hợp đồng.
+- **Doanh thu ngắn hạn & dài hạn (Deals)**: nhập **một lần duy nhất** (check-in/check-out, đơn giá...), hệ thống tự phân loại Ngắn hạn/Dài hạn theo quy ước **1 tháng = 30 ngày** (≥ 30 đêm là dài hạn) và **tự động sinh các kỳ công nợ 30 ngày** cho deal dài hạn (thuê/cọc/điện nước/đã thanh toán từng kỳ).
+- **Chi phí**: ghi nhận chi phí theo danh mục (điện, nước, phí quản lý, lương, sửa chữa...), lọc theo tháng.
+- **Tiền lương vệ sinh**: chấm công nhân viên vệ sinh theo ngày/phòng/hạng mục việc, lọc theo nhân viên + khoảng ngày ra tổng lương.
 - **Báo cáo**: doanh thu - chi phí - lợi nhuận theo tháng (6/12/24 tháng), cơ cấu chi phí, tỷ lệ lấp đầy phòng.
-- **Lịch phòng**: xem theo tháng phòng nào đang có khách ngắn hạn / hợp đồng dài hạn / bảo trì.
-- **Ticket bảo trì**: ghi nhận và theo dõi yêu cầu sửa chữa theo từng phòng.
 - **Nhắc nhở**: danh sách việc cần nhắc tự tạo, đánh dấu hoàn thành.
 - **Tài khoản ngân hàng & Đối soát**: gắn giao dịch thu/chi với tài khoản ngân hàng, đánh dấu đã đối soát với sao kê.
 - **Đồng bộ Google Sheets**: đẩy/kéo dữ liệu qua lại với Google Sheet (xem [`GOOGLE_SHEETS.md`](GOOGLE_SHEETS.md)).
@@ -22,10 +20,10 @@ Phần mềm quản lý cho thuê phòng / chung cư mini / căn hộ dịch v�
 
 ```
 config/       Cấu hình kết nối CSDL, session
-includes/     Header/footer, hàm dùng chung
+includes/     Header/footer, hàm dùng chung, GoogleSheets.php, deal_helpers.php
 assets/       CSS, JS
 database/     schema.sql (MySQL - dùng để deploy), schema_sqlite.sql (chỉ để test local)
-rooms/ tenants/ contracts/ invoices/ bookings/ expenses/ reports/ users/
+rooms/ contracts/ deals/ expenses/ cleaning/ reminders/ bank_accounts/ reconciliation/ reports/ users/ settings/
 uploads/      File hợp đồng tải lên
 ```
 

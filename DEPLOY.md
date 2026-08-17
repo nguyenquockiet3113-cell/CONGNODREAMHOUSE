@@ -13,7 +13,7 @@
 
 1. Vào **Databases → phpMyAdmin**, chọn đúng CSDL vừa tạo.
 2. Vào tab **Import**, chọn file `database/schema.sql` trong repo này, nhấn **Go**.
-3. Kiểm tra đã có đủ các bảng: `users, rooms, tenants, contracts, contract_members, invoices, bookings, expenses`.
+3. Kiểm tra đã có đủ các bảng: `users, rooms, bank_accounts, contracts, deals, deal_periods, expenses, cleaning_logs, reminders, settings`.
 
 ## Bước 3 — Upload code
 

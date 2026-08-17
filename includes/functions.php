@@ -99,41 +99,10 @@ function generate_code(string $prefix, int $nextNumber): string
     return $prefix . date('Y') . str_pad((string)$nextNumber, 4, '0', STR_PAD_LEFT);
 }
 
-const ROOM_STATUS_LABELS = [
-    'trong' => 'Còn trống',
-    'dang_thue' => 'Đang thuê',
-    'bao_tri' => 'Bảo trì',
-];
-
 const CONTRACT_STATUS_LABELS = [
     'active' => 'Đang hiệu lực',
     'ended' => 'Đã kết thúc',
     'cancelled' => 'Đã hủy',
-];
-
-const INVOICE_STATUS_LABELS = [
-    'unpaid' => 'Chưa thanh toán',
-    'partial' => 'Thanh toán 1 phần',
-    'paid' => 'Đã thanh toán',
-];
-
-const BOOKING_STATUS_LABELS = [
-    'booked' => 'Đã đặt',
-    'checked_in' => 'Đang ở',
-    'checked_out' => 'Đã trả phòng',
-    'cancelled' => 'Đã hủy',
-];
-
-const TICKET_STATUS_LABELS = [
-    'open' => 'Mới báo',
-    'in_progress' => 'Đang xử lý',
-    'resolved' => 'Đã xong',
-];
-
-const TICKET_PRIORITY_LABELS = [
-    'low' => 'Thấp',
-    'normal' => 'Bình thường',
-    'high' => 'Khẩn cấp',
 ];
 
 const EXPENSE_CATEGORIES = [
@@ -164,10 +133,8 @@ function set_setting(PDO $pdo, string $key, string $value): void
 function badge_class(string $status): string
 {
     return match ($status) {
-        'trong', 'active', 'paid', 'checked_out', 'resolved' => 'success',
-        'dang_thue', 'checked_in', 'in_progress' => 'primary',
-        'bao_tri', 'partial', 'booked', 'open', 'high' => 'warning',
-        'ended', 'cancelled', 'unpaid', 'low' => 'secondary',
+        'active', 'paid' => 'success',
+        'ended', 'cancelled', 'unpaid' => 'secondary',
         default => 'secondary',
     };
 }

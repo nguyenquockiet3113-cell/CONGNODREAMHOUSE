@@ -7,8 +7,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reconcile_type'], $_P
     $type = $_POST['reconcile_type'];
     $rid = (int)$_POST['reconcile_id'];
     $table = match ($type) {
-        'invoice' => 'invoices',
-        'booking' => 'bookings',
+        'deal' => 'deals',
+        'period' => 'deal_periods',
         'expense' => 'expenses',
         default => null,
     };
@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reconcile_type'], $_P
     redirect('/reconciliation/index.php' . $qs);
 }
 
-$bankAccountId = $_GET['bank_account_id'] ?? '';
+$bankKeyword = trim($_GET['bank'] ?? '');
 $fromDate = $_GET['from'] ?? date('Y-m-01');
 $toDate = $_GET['to'] ?? date('Y-m-d');
 $reconciledFilter = $_GET['reconciled'] ?? '';
@@ -28,49 +28,47 @@ $bankAccounts = $pdo->query('SELECT * FROM bank_accounts ORDER BY bank_name')->f
 
 $rows = [];
 
-// Doanh thu dai han da thu (theo paid_date)
-$sql = "SELECT i.id, i.paid_date AS tx_date, i.paid_amount AS amount, i.bank_account_id, i.reconciled,
-               r.room_code, t.full_name AS party
-        FROM invoices i JOIN rooms r ON r.id = i.room_id JOIN contracts c ON c.id = i.contract_id JOIN tenants t ON t.id = c.tenant_id
-        WHERE i.paid_amount > 0 AND i.paid_date IS NOT NULL AND i.paid_date BETWEEN ? AND ?";
+// Thu ngan han (theo ngay check-in)
+$sql = "SELECT id, checkin_date AS tx_date, paid_amount AS amount, receiving_account, reconciled, room_code, guest_name
+        FROM deals WHERE deal_type = 'ngan_han' AND paid_amount > 0 AND checkin_date BETWEEN ? AND ?";
 $params = [$fromDate, $toDate];
-if ($bankAccountId !== '') { $sql .= ' AND i.bank_account_id = ?'; $params[] = $bankAccountId; }
-if ($reconciledFilter !== '') { $sql .= ' AND i.reconciled = ?'; $params[] = (int)$reconciledFilter; }
+if ($bankKeyword !== '') { $sql .= ' AND receiving_account LIKE ?'; $params[] = "%$bankKeyword%"; }
+if ($reconciledFilter !== '') { $sql .= ' AND reconciled = ?'; $params[] = (int)$reconciledFilter; }
 $stmt = $pdo->prepare($sql); $stmt->execute($params);
 foreach ($stmt->fetchAll() as $r) {
-    $rows[] = ['type' => 'invoice', 'label' => 'Thu tiền phòng dài hạn', 'id' => $r['id'], 'date' => $r['tx_date'],
-        'party' => $r['room_code'] . ' - ' . $r['party'], 'in' => (float)$r['amount'], 'out' => 0,
-        'bank_account_id' => $r['bank_account_id'], 'reconciled' => (int)$r['reconciled']];
+    $rows[] = ['type' => 'deal', 'label' => 'Thu ngắn hạn', 'id' => $r['id'], 'date' => $r['tx_date'],
+        'party' => $r['room_code'] . ' - ' . $r['guest_name'], 'account' => $r['receiving_account'],
+        'in' => (float)$r['amount'], 'out' => 0, 'reconciled' => (int)$r['reconciled']];
 }
 
-// Doanh thu ngan han da thu (theo paid_date)
-$sql = "SELECT b.id, b.paid_date AS tx_date, b.total_amount AS amount, b.bank_account_id, b.reconciled,
-               r.room_code, b.guest_name AS party
-        FROM bookings b JOIN rooms r ON r.id = b.room_id
-        WHERE b.payment_status = 'paid' AND b.paid_date IS NOT NULL AND b.paid_date BETWEEN ? AND ?";
+// Thu dai han (theo ky, period_start)
+$sql = "SELECT dp.id, dp.period_start AS tx_date, dp.paid_amount AS amount, d.receiving_account, dp.reconciled,
+               d.room_code, d.guest_name
+        FROM deal_periods dp JOIN deals d ON d.id = dp.deal_id
+        WHERE d.deal_type = 'dai_han' AND dp.paid_amount > 0 AND dp.period_start BETWEEN ? AND ?";
 $params = [$fromDate, $toDate];
-if ($bankAccountId !== '') { $sql .= ' AND b.bank_account_id = ?'; $params[] = $bankAccountId; }
-if ($reconciledFilter !== '') { $sql .= ' AND b.reconciled = ?'; $params[] = (int)$reconciledFilter; }
+if ($bankKeyword !== '') { $sql .= ' AND d.receiving_account LIKE ?'; $params[] = "%$bankKeyword%"; }
+if ($reconciledFilter !== '') { $sql .= ' AND dp.reconciled = ?'; $params[] = (int)$reconciledFilter; }
 $stmt = $pdo->prepare($sql); $stmt->execute($params);
 foreach ($stmt->fetchAll() as $r) {
-    $rows[] = ['type' => 'booking', 'label' => 'Thu tiền phòng ngắn hạn', 'id' => $r['id'], 'date' => $r['tx_date'],
-        'party' => $r['room_code'] . ' - ' . $r['party'], 'in' => (float)$r['amount'], 'out' => 0,
-        'bank_account_id' => $r['bank_account_id'], 'reconciled' => (int)$r['reconciled']];
+    $rows[] = ['type' => 'period', 'label' => 'Thu dài hạn', 'id' => $r['id'], 'date' => $r['tx_date'],
+        'party' => $r['room_code'] . ' - ' . $r['guest_name'], 'account' => $r['receiving_account'],
+        'in' => (float)$r['amount'], 'out' => 0, 'reconciled' => (int)$r['reconciled']];
 }
 
 // Chi phi
-$sql = "SELECT ex.id, ex.expense_date AS tx_date, ex.amount, ex.bank_account_id, ex.reconciled,
-               ex.category, r.room_code
-        FROM expenses ex LEFT JOIN rooms r ON r.id = ex.room_id
+$sql = "SELECT ex.id, ex.expense_date AS tx_date, ex.amount, ex.reconciled, ex.category, r.room_code, ba.bank_name, ba.account_number
+        FROM expenses ex LEFT JOIN rooms r ON r.id = ex.room_id LEFT JOIN bank_accounts ba ON ba.id = ex.bank_account_id
         WHERE ex.expense_date BETWEEN ? AND ?";
 $params = [$fromDate, $toDate];
-if ($bankAccountId !== '') { $sql .= ' AND ex.bank_account_id = ?'; $params[] = $bankAccountId; }
 if ($reconciledFilter !== '') { $sql .= ' AND ex.reconciled = ?'; $params[] = (int)$reconciledFilter; }
 $stmt = $pdo->prepare($sql); $stmt->execute($params);
 foreach ($stmt->fetchAll() as $r) {
+    $accountLabel = trim(($r['bank_name'] ?? '') . ' ' . ($r['account_number'] ?? ''));
+    if ($bankKeyword !== '' && stripos($accountLabel, $bankKeyword) === false) continue;
     $rows[] = ['type' => 'expense', 'label' => 'Chi phí - ' . $r['category'], 'id' => $r['id'], 'date' => $r['tx_date'],
-        'party' => $r['room_code'] ?? '', 'in' => 0, 'out' => (float)$r['amount'],
-        'bank_account_id' => $r['bank_account_id'], 'reconciled' => (int)$r['reconciled']];
+        'party' => $r['room_code'] ?? '', 'account' => $accountLabel,
+        'in' => 0, 'out' => (float)$r['amount'], 'reconciled' => (int)$r['reconciled']];
 }
 
 usort($rows, fn($a, $b) => strcmp($b['date'], $a['date']));
@@ -78,8 +76,6 @@ usort($rows, fn($a, $b) => strcmp($b['date'], $a['date']));
 $totalIn = array_sum(array_column($rows, 'in'));
 $totalOut = array_sum(array_column($rows, 'out'));
 $unreconciledCount = count(array_filter($rows, fn($r) => !$r['reconciled']));
-
-$bankAccountsById = array_column($bankAccounts, null, 'id');
 
 $pageTitle = 'Đối soát ngân hàng';
 require_once __DIR__ . '/../includes/header.php';
@@ -93,13 +89,11 @@ require_once __DIR__ . '/../includes/header.php';
   <div class="card-body">
     <form class="row g-2 align-items-end">
       <div class="col-sm-3">
-        <label class="form-label small mb-1">Tài khoản ngân hàng</label>
-        <select name="bank_account_id" class="form-select">
-          <option value="">-- Tất cả --</option>
-          <?php foreach ($bankAccounts as $ba): ?>
-            <option value="<?= $ba['id'] ?>" <?= (string)$bankAccountId === (string)$ba['id'] ? 'selected' : '' ?>><?= e($ba['bank_name']) ?><?= $ba['account_number'] ? ' - ' . e($ba['account_number']) : '' ?></option>
-          <?php endforeach; ?>
-        </select>
+        <label class="form-label small mb-1">Ngân hàng / Số TK</label>
+        <input type="text" name="bank" class="form-control" list="bankHints" placeholder="VD: Vietcombank" value="<?= e($bankKeyword) ?>">
+        <datalist id="bankHints">
+          <?php foreach ($bankAccounts as $ba): ?><option value="<?= e($ba['bank_name']) ?>"><?php endforeach; ?>
+        </datalist>
       </div>
       <div class="col-sm-2">
         <label class="form-label small mb-1">Từ ngày</label>
@@ -159,7 +153,7 @@ require_once __DIR__ . '/../includes/header.php';
             <td><?= vndate($r['date']) ?></td>
             <td><?= e($r['label']) ?></td>
             <td><?= e($r['party']) ?></td>
-            <td><?= $r['bank_account_id'] && isset($bankAccountsById[$r['bank_account_id']]) ? e($bankAccountsById[$r['bank_account_id']]['bank_name']) : '<span class="text-muted">Tiền mặt</span>' ?></td>
+            <td><?= $r['account'] ? e($r['account']) : '<span class="text-muted">Tiền mặt</span>' ?></td>
             <td class="text-end text-success"><?= $r['in'] > 0 ? money($r['in']) : '' ?></td>
             <td class="text-end text-danger"><?= $r['out'] > 0 ? money($r['out']) : '' ?></td>
             <td>

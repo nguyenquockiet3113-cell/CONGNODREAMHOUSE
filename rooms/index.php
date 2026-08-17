@@ -2,23 +2,17 @@
 require_once __DIR__ . '/../config/config.php';
 require_login();
 
-$statusFilter = $_GET['status'] ?? '';
 $zoneFilter = trim($_GET['zone'] ?? '');
 $search = trim($_GET['q'] ?? '');
 
 $sql = 'SELECT * FROM rooms WHERE 1=1';
 $params = [];
-if ($statusFilter !== '') {
-    $sql .= ' AND status = ?';
-    $params[] = $statusFilter;
-}
 if ($zoneFilter !== '') {
     $sql .= ' AND zone = ?';
     $params[] = $zoneFilter;
 }
 if ($search !== '') {
-    $sql .= ' AND (room_code LIKE ? OR room_type LIKE ? OR zone LIKE ?)';
-    $params[] = "%$search%";
+    $sql .= ' AND (room_code LIKE ? OR zone LIKE ?)';
     $params[] = "%$search%";
     $params[] = "%$search%";
 }
@@ -28,6 +22,12 @@ $stmt->execute($params);
 $rooms = $stmt->fetchAll();
 
 $zones = $pdo->query("SELECT DISTINCT zone FROM rooms WHERE zone IS NOT NULL AND zone != '' ORDER BY zone")->fetchAll(PDO::FETCH_COLUMN);
+
+// Phong dang co khach o (theo deal co checkin <= hom nay < checkout)
+$today = date('Y-m-d');
+$occupiedCodes = $pdo->prepare('SELECT DISTINCT room_code FROM deals WHERE checkin_date <= ? AND checkout_date > ?');
+$occupiedCodes->execute([$today, $today]);
+$occupiedSet = array_flip($occupiedCodes->fetchAll(PDO::FETCH_COLUMN));
 
 $pageTitle = 'Danh sách phòng';
 require_once __DIR__ . '/../includes/header.php';
@@ -40,25 +40,16 @@ require_once __DIR__ . '/../includes/header.php';
 <div class="card mb-3">
   <div class="card-body">
     <form class="row g-2 align-items-end">
-      <div class="col-sm-3">
+      <div class="col-sm-4">
         <label class="form-label small mb-1">Tìm kiếm</label>
         <input type="text" name="q" class="form-control" placeholder="Mã phòng, khu vực..." value="<?= e($search) ?>">
       </div>
-      <div class="col-sm-3">
+      <div class="col-sm-4">
         <label class="form-label small mb-1">Khu vực</label>
         <select name="zone" class="form-select">
           <option value="">-- Tất cả khu vực --</option>
           <?php foreach ($zones as $z): ?>
             <option value="<?= e($z) ?>" <?= $zoneFilter === $z ? 'selected' : '' ?>><?= e($z) ?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <div class="col-sm-3">
-        <label class="form-label small mb-1">Trạng thái</label>
-        <select name="status" class="form-select">
-          <option value="">-- Tất cả --</option>
-          <?php foreach (ROOM_STATUS_LABELS as $k => $v): ?>
-            <option value="<?= e($k) ?>" <?= $statusFilter === $k ? 'selected' : '' ?>><?= e($v) ?></option>
           <?php endforeach; ?>
         </select>
       </div>
@@ -98,9 +89,10 @@ foreach ($rooms as $r) {
         </thead>
         <tbody>
           <?php foreach ($zoneRooms as $r): ?>
+            <?php $occupied = isset($occupiedSet[$r['room_code']]); ?>
             <tr>
               <td class="fw-semibold">
-                <span class="status-dot bg-<?= badge_class($r['status']) ?>" title="<?= e(ROOM_STATUS_LABELS[$r['status']] ?? $r['status']) ?>"></span>
+                <span class="status-dot bg-<?= $occupied ? 'primary' : 'success' ?>" title="<?= $occupied ? 'Đang ở' : 'Còn trống' ?>"></span>
                 <a href="<?= url('/rooms/form.php?id=' . $r['id']) ?>" class="text-decoration-none text-reset"><?= e($r['room_code']) ?></a>
               </td>
               <td><?= (int)$r['bedrooms'] ?> PN</td>

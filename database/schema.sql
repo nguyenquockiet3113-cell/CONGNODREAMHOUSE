@@ -20,76 +20,19 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
--- Bang phong
+-- Bang phong (danh muc tham khao - khong bat buoc phai co truoc khi tao deal)
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS rooms (
     id INT AUTO_INCREMENT PRIMARY KEY,
     room_code VARCHAR(50) NOT NULL UNIQUE,
     zone VARCHAR(150) DEFAULT NULL, -- Khu vuc, vd: Vinhomes Central Park
-    bedrooms INT NOT NULL DEFAULT 1, -- So phong ngu
-    floor VARCHAR(20) DEFAULT NULL,
-    room_type VARCHAR(100) DEFAULT NULL,
-    area_m2 DECIMAL(8,2) DEFAULT NULL,
-    monthly_price DECIMAL(14,0) NOT NULL DEFAULT 0,
-    short_term_price DECIMAL(14,0) NOT NULL DEFAULT 0,
-    max_occupants INT NOT NULL DEFAULT 1,
-    status VARCHAR(20) NOT NULL DEFAULT 'trong', -- trong | dang_thue | bao_tri
-    description TEXT,
+    bedrooms INT NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
--- Bang khach thue (dai han)
--- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS tenants (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    full_name VARCHAR(150) NOT NULL,
-    phone VARCHAR(30) DEFAULT NULL,
-    email VARCHAR(150) DEFAULT NULL,
-    id_card_number VARCHAR(50) DEFAULT NULL,
-    id_card_address TEXT,
-    permanent_address TEXT,
-    note TEXT,
-    created_at DATETIME NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ---------------------------------------------------------------------
--- Bang hop dong dai han
--- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS contracts (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    contract_code VARCHAR(50) NOT NULL UNIQUE,
-    room_id INT NOT NULL,
-    tenant_id INT NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    monthly_rent DECIMAL(14,0) NOT NULL DEFAULT 0,
-    deposit_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
-    deposit_returned TINYINT(1) NOT NULL DEFAULT 0,
-    electricity_price DECIMAL(10,0) NOT NULL DEFAULT 3500,
-    water_price DECIMAL(10,0) NOT NULL DEFAULT 20000,
-    service_fee DECIMAL(14,0) NOT NULL DEFAULT 0,
-    status VARCHAR(20) NOT NULL DEFAULT 'active', -- active | ended | cancelled
-    file_path VARCHAR(255) DEFAULT NULL,
-    note TEXT,
-    created_at DATETIME NOT NULL,
-    CONSTRAINT fk_contracts_room FOREIGN KEY (room_id) REFERENCES rooms(id),
-    CONSTRAINT fk_contracts_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Nguoi o cung (ngoai nguoi dai dien ky hop dong)
-CREATE TABLE IF NOT EXISTS contract_members (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    contract_id INT NOT NULL,
-    full_name VARCHAR(150) NOT NULL,
-    phone VARCHAR(30) DEFAULT NULL,
-    id_card_number VARCHAR(50) DEFAULT NULL,
-    CONSTRAINT fk_members_contract FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ---------------------------------------------------------------------
--- Bang tai khoan ngan hang (dung de gan giao dich, doi soat)
+-- Bang tai khoan ngan hang (dung de goi y "Tai khoan nhan", doi soat)
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS bank_accounts (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -101,62 +44,98 @@ CREATE TABLE IF NOT EXISTS bank_accounts (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
--- Bang hoa don hang thang - DOANH THU DAI HAN
+-- Bang hop dong thue (ho so phap ly, dien theo mau hop dong thuc te)
 -- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS invoices (
+CREATE TABLE IF NOT EXISTS contracts (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    contract_id INT NOT NULL,
-    room_id INT NOT NULL,
-    period_month VARCHAR(7) NOT NULL, -- YYYY-MM
-    rent_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
-    electricity_old DECIMAL(10,2) NOT NULL DEFAULT 0,
-    electricity_new DECIMAL(10,2) NOT NULL DEFAULT 0,
-    electricity_price DECIMAL(10,0) NOT NULL DEFAULT 0,
-    water_old DECIMAL(10,2) NOT NULL DEFAULT 0,
-    water_new DECIMAL(10,2) NOT NULL DEFAULT 0,
-    water_price DECIMAL(10,0) NOT NULL DEFAULT 0,
-    service_fee DECIMAL(14,0) NOT NULL DEFAULT 0,
-    other_fee DECIMAL(14,0) NOT NULL DEFAULT 0,
-    other_fee_note VARCHAR(255) DEFAULT NULL,
-    total_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
-    paid_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
-    status VARCHAR(20) NOT NULL DEFAULT 'unpaid', -- unpaid | partial | paid
-    due_date DATE DEFAULT NULL,
-    paid_date DATE DEFAULT NULL,
-    bank_account_id INT DEFAULT NULL,
-    reconciled TINYINT(1) NOT NULL DEFAULT 0,
+    contract_code VARCHAR(50) NOT NULL UNIQUE, -- So hop dong, vd: LP-31.15
+    room_code VARCHAR(50) NOT NULL,
+    zone VARCHAR(150) DEFAULT NULL,
+
+    lessee_name VARCHAR(150) NOT NULL, -- Ben thue
+    lessee_dob DATE DEFAULT NULL,
+    lessee_nationality VARCHAR(100) DEFAULT NULL,
+    lessee_id_number VARCHAR(50) DEFAULT NULL,
+    lessee_id_issue_date DATE DEFAULT NULL,
+    lessee_id_issue_place VARCHAR(150) DEFAULT NULL,
+    lessee_address VARCHAR(255) DEFAULT NULL,
+    lessee_phone VARCHAR(30) DEFAULT NULL,
+    lessee_email VARCHAR(150) DEFAULT NULL,
+
+    lessor_name VARCHAR(150) DEFAULT NULL, -- Ben cho thue (chu nha)
+    lessor_dob DATE DEFAULT NULL,
+    lessor_id_number VARCHAR(50) DEFAULT NULL,
+    lessor_id_issue_date DATE DEFAULT NULL,
+    lessor_id_issue_place VARCHAR(150) DEFAULT NULL,
+    lessor_address VARCHAR(255) DEFAULT NULL,
+
+    monthly_rent DECIMAL(14,0) NOT NULL DEFAULT 0,
+    rent_note VARCHAR(255) DEFAULT NULL, -- vd: "Khong bao gom phi quan ly, internet"
+    deposit_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    checkin_time VARCHAR(10) DEFAULT '14:00',
+    checkout_time VARCHAR(10) DEFAULT '12:00',
+
+    payment_method VARCHAR(20) NOT NULL DEFAULT 'chuyen_khoan', -- tien_mat | chuyen_khoan
+    receiving_account VARCHAR(100) DEFAULT NULL,
+    bank_name VARCHAR(100) DEFAULT NULL,
+    beneficiary_name VARCHAR(150) DEFAULT NULL,
+    payment_note VARCHAR(255) DEFAULT NULL,
+
+    status VARCHAR(20) NOT NULL DEFAULT 'active', -- active | ended | cancelled
+    file_path VARCHAR(255) DEFAULT NULL,
     note TEXT,
-    created_at DATETIME NOT NULL,
-    UNIQUE KEY uniq_contract_period (contract_id, period_month),
-    CONSTRAINT fk_invoices_contract FOREIGN KEY (contract_id) REFERENCES contracts(id),
-    CONSTRAINT fk_invoices_room FOREIGN KEY (room_id) REFERENCES rooms(id),
-    CONSTRAINT fk_invoices_bank FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL
+    created_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
--- Bang dat phong ngan han - DOANH THU NGAN HAN
+-- Bang Deal (dat phong) - hop nhat doanh thu ngan han va dai han.
+-- Quy uoc: >= 30 dem duoc coi la Dai han va tu dong sinh cac ky
+-- thanh toan 30 ngay trong bang deal_periods.
 -- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS bookings (
+CREATE TABLE IF NOT EXISTS deals (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    room_id INT NOT NULL,
+    room_code VARCHAR(50) NOT NULL,
+    bedrooms INT DEFAULT NULL,
+    zone VARCHAR(150) DEFAULT NULL,
     guest_name VARCHAR(150) NOT NULL,
-    guest_phone VARCHAR(30) DEFAULT NULL,
-    guest_id_card VARCHAR(50) DEFAULT NULL,
     checkin_date DATE NOT NULL,
     checkout_date DATE NOT NULL,
-    price_per_night DECIMAL(14,0) NOT NULL DEFAULT 0,
+    nights INT NOT NULL DEFAULT 0,
+    deal_type VARCHAR(10) NOT NULL DEFAULT 'ngan_han', -- ngan_han | dai_han
+    price_per_unit DECIMAL(14,0) NOT NULL DEFAULT 0, -- gia/dem (ngan han) hoac gia/ky 30 ngay (dai han)
     deposit_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
-    extra_fee DECIMAL(14,0) NOT NULL DEFAULT 0,
+    deposit_date DATE DEFAULT NULL,
+    extra_fee DECIMAL(14,0) NOT NULL DEFAULT 0, -- Charge
     total_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
-    status VARCHAR(20) NOT NULL DEFAULT 'booked', -- booked | checked_in | checked_out | cancelled
-    payment_status VARCHAR(20) NOT NULL DEFAULT 'unpaid', -- unpaid | paid
-    paid_date DATE DEFAULT NULL,
-    bank_account_id INT DEFAULT NULL,
+    payment_method VARCHAR(20) NOT NULL DEFAULT 'chuyen_khoan',
+    receiving_account VARCHAR(100) DEFAULT NULL,
+    paid_amount DECIMAL(14,0) NOT NULL DEFAULT 0, -- Da CK/TM (chi dung cho ngan han)
+    payment_status VARCHAR(20) NOT NULL DEFAULT 'unpaid', -- unpaid | paid (cot "Da TT")
     reconciled TINYINT(1) NOT NULL DEFAULT 0,
     note TEXT,
     created_at DATETIME NOT NULL,
-    CONSTRAINT fk_bookings_room FOREIGN KEY (room_id) REFERENCES rooms(id),
-    CONSTRAINT fk_bookings_bank FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL
+    updated_at DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
+-- Cac ky cong no hang thang cua Deal dai han (vong doi 30 ngay/ky)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS deal_periods (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    deal_id INT NOT NULL,
+    period_index INT NOT NULL,
+    period_start DATE NOT NULL,
+    period_end DATE NOT NULL,
+    rent_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    deposit_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    utilities_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    paid_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    reconciled TINYINT(1) NOT NULL DEFAULT 0,
+    note VARCHAR(255) DEFAULT NULL,
+    CONSTRAINT fk_periods_deal FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
@@ -177,20 +156,20 @@ CREATE TABLE IF NOT EXISTS expenses (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
--- Bang ticket bao tri / sua chua
+-- Bang cong nhat ky lam viec ve sinh (tinh luong)
 -- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS tickets (
+CREATE TABLE IF NOT EXISTS cleaning_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    room_id INT NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    priority VARCHAR(20) NOT NULL DEFAULT 'normal', -- low | normal | high
-    status VARCHAR(20) NOT NULL DEFAULT 'open', -- open | in_progress | resolved
-    reported_by VARCHAR(150) DEFAULT NULL,
-    resolution_note TEXT,
-    resolved_at DATETIME DEFAULT NULL,
-    created_at DATETIME NOT NULL,
-    CONSTRAINT fk_tickets_room FOREIGN KEY (room_id) REFERENCES rooms(id)
+    work_date DATE NOT NULL,
+    staff_name VARCHAR(150) NOT NULL,
+    room_code VARCHAR(50) DEFAULT NULL,
+    bedrooms INT DEFAULT NULL,
+    work_item VARCHAR(150) DEFAULT NULL, -- hang muc, vd: "Set up 1PN"
+    work_type VARCHAR(100) DEFAULT NULL, -- loai cong viec
+    price DECIMAL(14,0) NOT NULL DEFAULT 0,
+    plus DECIMAL(14,0) NOT NULL DEFAULT 0,
+    note VARCHAR(255) DEFAULT NULL,
+    created_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------

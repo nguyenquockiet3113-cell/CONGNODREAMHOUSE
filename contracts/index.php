@@ -5,21 +5,17 @@ require_login();
 $statusFilter = $_GET['status'] ?? '';
 $search = trim($_GET['q'] ?? '');
 
-$sql = 'SELECT c.*, r.room_code, t.full_name AS tenant_name, t.phone AS tenant_phone
-        FROM contracts c
-        JOIN rooms r ON r.id = c.room_id
-        JOIN tenants t ON t.id = c.tenant_id
-        WHERE 1=1';
+$sql = 'SELECT * FROM contracts WHERE 1=1';
 $params = [];
 if ($statusFilter !== '') {
-    $sql .= ' AND c.status = ?';
+    $sql .= ' AND status = ?';
     $params[] = $statusFilter;
 }
 if ($search !== '') {
-    $sql .= ' AND (c.contract_code LIKE ? OR r.room_code LIKE ? OR t.full_name LIKE ?)';
+    $sql .= ' AND (contract_code LIKE ? OR room_code LIKE ? OR lessee_name LIKE ?)';
     $params = array_merge($params, ["%$search%", "%$search%", "%$search%"]);
 }
-$sql .= ' ORDER BY c.created_at DESC';
+$sql .= ' ORDER BY created_at DESC';
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $contracts = $stmt->fetchAll();
@@ -38,7 +34,7 @@ require_once __DIR__ . '/../includes/header.php';
   <div class="card-body">
     <form class="row g-2 align-items-end">
       <div class="col-sm-4">
-        <input type="text" name="q" class="form-control" placeholder="Mã HĐ, phòng, tên khách..." value="<?= e($search) ?>">
+        <input type="text" name="q" class="form-control" placeholder="Số HĐ, phòng, tên khách..." value="<?= e($search) ?>">
       </div>
       <div class="col-sm-3">
         <select name="status" class="form-select">
@@ -60,9 +56,9 @@ require_once __DIR__ . '/../includes/header.php';
     <table class="table table-hover mb-0">
       <thead>
         <tr>
-          <th>Mã HĐ</th>
+          <th>Số HĐ</th>
           <th>Phòng</th>
-          <th>Khách thuê</th>
+          <th>Bên thuê</th>
           <th>Bắt đầu</th>
           <th>Kết thúc</th>
           <th>Tiền thuê/tháng</th>
@@ -81,8 +77,8 @@ require_once __DIR__ . '/../includes/header.php';
           ?>
           <tr class="<?= $expiringSoon ? 'table-warning' : '' ?>">
             <td><a href="<?= url('/contracts/view.php?id=' . $c['id']) ?>" class="fw-semibold text-decoration-none"><?= e($c['contract_code']) ?></a></td>
-            <td><?= e($c['room_code']) ?></td>
-            <td><?= e($c['tenant_name']) ?><div class="small text-muted"><?= e($c['tenant_phone']) ?></div></td>
+            <td><?= e($c['room_code']) ?><?= $c['zone'] ? '<div class="small text-muted">' . e($c['zone']) . '</div>' : '' ?></td>
+            <td><?= e($c['lessee_name']) ?><div class="small text-muted"><?= e($c['lessee_phone']) ?></div></td>
             <td><?= vndate($c['start_date']) ?></td>
             <td><?= vndate($c['end_date']) ?><?php if ($expiringSoon): ?> <i class="bi bi-exclamation-triangle-fill text-warning" title="Sắp hết hạn"></i><?php endif; ?></td>
             <td><?= money($c['monthly_rent']) ?></td>

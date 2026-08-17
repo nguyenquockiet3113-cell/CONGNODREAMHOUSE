@@ -13,16 +13,18 @@ for ($i = $monthsCount - 1; $i >= 0; $i--) {
 $rows = [];
 $sumRevenueLT = 0; $sumRevenueST = 0; $sumExpense = 0;
 foreach ($months as $m) {
-    $s1 = $pdo->prepare("SELECT COALESCE(SUM(paid_amount),0) s FROM invoices WHERE paid_date IS NOT NULL AND substr(paid_date,1,7) = ?");
-    $s1->execute([$m]);
+    $mf = $m . '-01'; $ml = date('Y-m-d', strtotime($mf . ' +1 month -1 day'));
+
+    $s1 = $pdo->prepare("SELECT COALESCE(SUM(dp.paid_amount),0) s FROM deal_periods dp JOIN deals d ON d.id=dp.deal_id WHERE d.deal_type='dai_han' AND dp.period_start BETWEEN ? AND ?");
+    $s1->execute([$mf, $ml]);
     $lt = (float)$s1->fetch()['s'];
 
-    $s2 = $pdo->prepare("SELECT COALESCE(SUM(total_amount),0) s FROM bookings WHERE payment_status='paid' AND paid_date IS NOT NULL AND substr(paid_date,1,7) = ?");
-    $s2->execute([$m]);
+    $s2 = $pdo->prepare("SELECT COALESCE(SUM(paid_amount),0) s FROM deals WHERE deal_type='ngan_han' AND checkin_date BETWEEN ? AND ?");
+    $s2->execute([$mf, $ml]);
     $st = (float)$s2->fetch()['s'];
 
-    $s3 = $pdo->prepare("SELECT COALESCE(SUM(amount),0) s FROM expenses WHERE substr(expense_date,1,7) = ?");
-    $s3->execute([$m]);
+    $s3 = $pdo->prepare('SELECT COALESCE(SUM(amount),0) s FROM expenses WHERE expense_date BETWEEN ? AND ?');
+    $s3->execute([$mf, $ml]);
     $ex = (float)$s3->fetch()['s'];
 
     $rows[] = ['month' => $m, 'lt' => $lt, 'st' => $st, 'expense' => $ex, 'profit' => $lt + $st - $ex];
@@ -32,18 +34,20 @@ $sumRevenue = $sumRevenueLT + $sumRevenueST;
 $sumProfit = $sumRevenue - $sumExpense;
 
 // Chi phi theo danh muc (trong khoang thoi gian bao cao)
-$fromMonth = $months[0];
-$toMonth = end($months);
+$fromMonth = $months[0] . '-01';
+$toMonth = date('Y-m-d', strtotime(end($months) . '-01 +1 month -1 day'));
 $catStmt = $pdo->prepare(
-    "SELECT category, COALESCE(SUM(amount),0) s FROM expenses
-     WHERE substr(expense_date,1,7) BETWEEN ? AND ? GROUP BY category ORDER BY s DESC"
+    'SELECT category, COALESCE(SUM(amount),0) s FROM expenses WHERE expense_date BETWEEN ? AND ? GROUP BY category ORDER BY s DESC'
 );
 $catStmt->execute([$fromMonth, $toMonth]);
 $categoryBreakdown = $catStmt->fetchAll();
 
 // Ty le lap day phong hien tai
+$today = date('Y-m-d');
 $roomTotal = (int)$pdo->query('SELECT COUNT(*) c FROM rooms')->fetch()['c'];
-$roomOccupied = (int)$pdo->query("SELECT COUNT(*) c FROM rooms WHERE status = 'dang_thue'")->fetch()['c'];
+$occStmt = $pdo->prepare('SELECT COUNT(DISTINCT room_code) c FROM deals WHERE checkin_date <= ? AND checkout_date > ?');
+$occStmt->execute([$today, $today]);
+$roomOccupied = (int)$occStmt->fetch()['c'];
 $occupancyRate = $roomTotal > 0 ? round($roomOccupied / $roomTotal * 100, 1) : 0;
 
 $pageTitle = 'Báo cáo';
