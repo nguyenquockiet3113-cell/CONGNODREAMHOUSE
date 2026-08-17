@@ -29,7 +29,11 @@ require_once __DIR__ . '/../includes/header.php';
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <h4 class="mb-0"><i class="bi bi-calendar-check"></i> Doanh thu ngắn hạn</h4>
-  <a href="<?= url('/deals/form.php') ?>" class="btn btn-success"><i class="bi bi-plus-lg"></i> Thêm deal</a>
+  <div class="d-flex gap-2">
+    <a href="<?= url('/deals/export.php?' . http_build_query($_GET)) ?>" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-arrow-down"></i> Xuất CSV</a>
+    <a href="<?= url('/deals/import.php') ?>" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-arrow-up"></i> Nhập từ Excel</a>
+    <a href="<?= url('/deals/form.php') ?>" class="btn btn-success"><i class="bi bi-plus-lg"></i> Thêm deal</a>
+  </div>
 </div>
 
 <div class="row g-3 mb-3">

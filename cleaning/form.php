@@ -5,7 +5,8 @@ require_login();
 $id = (int)($_GET['id'] ?? 0);
 $log = [
     'id' => 0, 'work_date' => date('Y-m-d'), 'staff_name' => '', 'room_code' => '',
-    'bedrooms' => '', 'work_item' => '', 'work_type' => '', 'price' => 0, 'plus' => 0, 'note' => '',
+    'bedrooms' => '', 'work_item' => '', 'work_type' => '', 'hours' => '',
+    'price' => 0, 'plus' => 0, 'penalty' => 0, 'note' => '',
 ];
 $errors = [];
 
@@ -22,8 +23,8 @@ if ($id) {
 
 $staffList = $pdo->query('SELECT DISTINCT staff_name FROM cleaning_logs ORDER BY staff_name')->fetchAll(PDO::FETCH_COLUMN);
 $rooms = $pdo->query('SELECT room_code, bedrooms FROM rooms ORDER BY room_code')->fetchAll();
-$workItems = $pdo->query("SELECT DISTINCT work_item FROM cleaning_logs WHERE work_item IS NOT NULL AND work_item != '' ORDER BY work_item")->fetchAll(PDO::FETCH_COLUMN);
-$workTypes = $pdo->query("SELECT DISTINCT work_type FROM cleaning_logs WHERE work_type IS NOT NULL AND work_type != '' ORDER BY work_type")->fetchAll(PDO::FETCH_COLUMN);
+$priceList = $pdo->query('SELECT * FROM cleaning_price_list ORDER BY work_type, unit_price')->fetchAll();
+$workTypes = array_values(array_unique(array_column($priceList, 'work_type')));
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -33,8 +34,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $log['bedrooms'] = ($_POST['bedrooms'] ?? '') !== '' ? (int)$_POST['bedrooms'] : null;
     $log['work_item'] = trim($_POST['work_item'] ?? '');
     $log['work_type'] = trim($_POST['work_type'] ?? '');
+    $log['hours'] = ($_POST['hours'] ?? '') !== '' ? (float)$_POST['hours'] : null;
     $log['price'] = (float)($_POST['price'] ?? 0);
     $log['plus'] = (float)($_POST['plus'] ?? 0);
+    $log['penalty'] = (float)($_POST['penalty'] ?? 0);
     $log['note'] = trim($_POST['note'] ?? '');
 
     if (!$log['work_date']) $errors[] = 'Vui lòng chọn ngày.';
@@ -42,13 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$errors) {
         if ($id) {
-            $stmt = $pdo->prepare('UPDATE cleaning_logs SET work_date=?, staff_name=?, room_code=?, bedrooms=?, work_item=?, work_type=?, price=?, plus=?, note=? WHERE id=?');
-            $stmt->execute([$log['work_date'], $log['staff_name'], $log['room_code'], $log['bedrooms'], $log['work_item'], $log['work_type'], $log['price'], $log['plus'], $log['note'], $id]);
+            $stmt = $pdo->prepare('UPDATE cleaning_logs SET work_date=?, staff_name=?, room_code=?, bedrooms=?, work_item=?, work_type=?, hours=?, price=?, plus=?, penalty=?, note=? WHERE id=?');
+            $stmt->execute([$log['work_date'], $log['staff_name'], $log['room_code'], $log['bedrooms'], $log['work_item'], $log['work_type'], $log['hours'], $log['price'], $log['plus'], $log['penalty'], $log['note'], $id]);
             flash('success', 'Đã cập nhật.');
         } else {
             $now = date('Y-m-d H:i:s');
-            $stmt = $pdo->prepare('INSERT INTO cleaning_logs (work_date, staff_name, room_code, bedrooms, work_item, work_type, price, plus, note, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)');
-            $stmt->execute([$log['work_date'], $log['staff_name'], $log['room_code'], $log['bedrooms'], $log['work_item'], $log['work_type'], $log['price'], $log['plus'], $log['note'], $now]);
+            $stmt = $pdo->prepare('INSERT INTO cleaning_logs (work_date, staff_name, room_code, bedrooms, work_item, work_type, hours, price, plus, penalty, note, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
+            $stmt->execute([$log['work_date'], $log['staff_name'], $log['room_code'], $log['bedrooms'], $log['work_item'], $log['work_type'], $log['hours'], $log['price'], $log['plus'], $log['penalty'], $log['note'], $now]);
             flash('success', 'Đã thêm công việc.');
         }
         redirect('/cleaning/index.php');
@@ -58,7 +61,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $pageTitle = $id ? 'Sửa công việc' : 'Thêm công việc';
 require_once __DIR__ . '/../includes/header.php';
 ?>
-<h4 class="mb-3"><i class="bi bi-bucket"></i> <?= $id ? 'Sửa công việc' : 'Thêm công việc vệ sinh' ?></h4>
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h4 class="mb-0"><i class="bi bi-bucket"></i> <?= $id ? 'Sửa công việc' : 'Thêm công việc vệ sinh' ?></h4>
+  <a href="<?= url('/cleaning/prices.php') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-tags"></i> Bảng giá</a>
+</div>
 
 <?php foreach ($errors as $err): ?>
   <div class="alert alert-danger py-2"><?= e($err) ?></div>
@@ -66,7 +72,7 @@ require_once __DIR__ . '/../includes/header.php';
 
 <div class="card">
   <div class="card-body">
-    <form method="post">
+    <form method="post" id="cleanForm">
       <?= csrf_field() ?>
       <div class="row g-3">
         <div class="col-md-3">
@@ -92,28 +98,40 @@ require_once __DIR__ . '/../includes/header.php';
           <input type="number" min="0" name="bedrooms" id="cl_bedrooms" class="form-control" value="<?= e($log['bedrooms']) ?>">
         </div>
 
-        <div class="col-md-4">
-          <label class="form-label">Hạng mục (Change)</label>
-          <input type="text" name="work_item" class="form-control" list="workItemList" placeholder="VD: Set up 1PN" value="<?= e($log['work_item']) ?>">
-          <datalist id="workItemList">
-            <?php foreach ($workItems as $w): ?><option value="<?= e($w) ?>"><?php endforeach; ?>
-          </datalist>
+        <div class="col-md-3">
+          <label class="form-label">Loại (OUT/LƯU...)</label>
+          <select name="work_type" id="work_type" class="form-select">
+            <option value="">-- Chọn --</option>
+            <?php foreach ($workTypes as $wt): ?>
+              <option value="<?= e($wt) ?>" <?= $log['work_type'] === $wt ? 'selected' : '' ?>><?= e($wt) ?></option>
+            <?php endforeach; ?>
+          </select>
         </div>
-        <div class="col-md-4">
-          <label class="form-label">Loại (Type)</label>
-          <input type="text" name="work_type" class="form-control" list="workTypeList" value="<?= e($log['work_type']) ?>">
-          <datalist id="workTypeList">
-            <?php foreach ($workTypes as $w): ?><option value="<?= e($w) ?>"><?php endforeach; ?>
-          </datalist>
+        <div class="col-md-3">
+          <label class="form-label">Hạng mục</label>
+          <select name="work_item" id="work_item" class="form-select">
+            <option value="">-- Chọn --</option>
+            <?php foreach ($priceList as $pl): ?>
+              <option value="<?= e($pl['work_item']) ?>" data-type="<?= e($pl['work_type']) ?>" data-unit="<?= e($pl['unit']) ?>" data-price="<?= $pl['unit_price'] ?>" <?= $log['work_item'] === $pl['work_item'] ? 'selected' : '' ?>><?= e($pl['work_item']) ?> (<?= e($pl['work_type']) ?>)</option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="col-md-2" id="hoursWrap" style="display:none;">
+          <label class="form-label">Số giờ</label>
+          <input type="number" step="0.5" name="hours" id="hours" class="form-control" value="<?= e($log['hours']) ?>">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Price (đ)</label>
+          <input type="number" step="1000" name="price" id="price" class="form-control" value="<?= e($log['price']) ?>">
         </div>
 
         <div class="col-md-2">
-          <label class="form-label">Price (đ)</label>
-          <input type="number" step="1000" name="price" class="form-control" value="<?= e($log['price']) ?>">
+          <label class="form-label">Plus - thưởng (đ)</label>
+          <input type="number" step="1000" name="plus" class="form-control" value="<?= e($log['plus']) ?>">
         </div>
         <div class="col-md-2">
-          <label class="form-label">Plus (đ)</label>
-          <input type="number" step="1000" name="plus" class="form-control" value="<?= e($log['plus']) ?>">
+          <label class="form-label">Phạt (đ)</label>
+          <input type="number" step="1000" name="penalty" class="form-control" value="<?= e($log['penalty']) ?>">
         </div>
 
         <div class="col-12">
@@ -136,5 +154,37 @@ document.getElementById('cl_room_code').addEventListener('change', function () {
   var bField = document.getElementById('cl_bedrooms');
   if (b && !bField.value) bField.value = b;
 });
+
+var workItemSelect = document.getElementById('work_item');
+var workTypeSelect = document.getElementById('work_type');
+var hoursWrap = document.getElementById('hoursWrap');
+var hoursInput = document.getElementById('hours');
+var priceInput = document.getElementById('price');
+
+function applyItemPrice() {
+  var opt = workItemSelect.options[workItemSelect.selectedIndex];
+  if (!opt || !opt.value) return;
+  workTypeSelect.value = opt.getAttribute('data-type');
+  var unit = opt.getAttribute('data-unit');
+  var unitPrice = parseFloat(opt.getAttribute('data-price')) || 0;
+  if (unit === 'gio') {
+    hoursWrap.style.display = '';
+    var h = parseFloat(hoursInput.value) || 1;
+    if (!hoursInput.value) hoursInput.value = 1;
+    priceInput.value = Math.round(unitPrice * (parseFloat(hoursInput.value) || 1));
+  } else {
+    hoursWrap.style.display = 'none';
+    priceInput.value = unitPrice;
+  }
+}
+workItemSelect.addEventListener('change', applyItemPrice);
+hoursInput.addEventListener('input', function () {
+  var opt = workItemSelect.options[workItemSelect.selectedIndex];
+  if (opt && opt.getAttribute('data-unit') === 'gio') {
+    var unitPrice = parseFloat(opt.getAttribute('data-price')) || 0;
+    priceInput.value = Math.round(unitPrice * (parseFloat(hoursInput.value) || 0));
+  }
+});
+<?php if ($log['hours']): ?>hoursWrap.style.display = '';<?php endif; ?>
 </script>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

@@ -115,6 +115,17 @@ CREATE TABLE IF NOT EXISTS deal_periods (
     FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS deal_payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    deal_id INTEGER NOT NULL,
+    payment_date DATE NOT NULL,
+    amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    method VARCHAR(20) NOT NULL DEFAULT 'chuyen_khoan',
+    note VARCHAR(255),
+    created_at DATETIME NOT NULL,
+    FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS expenses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     expense_date DATE NOT NULL,
@@ -129,6 +140,17 @@ CREATE TABLE IF NOT EXISTS expenses (
     FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS cleaning_price_list (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    work_type VARCHAR(50) NOT NULL,
+    work_item VARCHAR(150) NOT NULL,
+    unit VARCHAR(20) NOT NULL DEFAULT 'phong',
+    unit_price DECIMAL(14,0) NOT NULL DEFAULT 0,
+    note VARCHAR(255),
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS cleaning_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     work_date DATE NOT NULL,
@@ -137,10 +159,28 @@ CREATE TABLE IF NOT EXISTS cleaning_logs (
     bedrooms INTEGER,
     work_item VARCHAR(150),
     work_type VARCHAR(100),
+    hours DECIMAL(6,2),
     price DECIMAL(14,0) NOT NULL DEFAULT 0,
     plus DECIMAL(14,0) NOT NULL DEFAULT 0,
+    penalty DECIMAL(14,0) NOT NULL DEFAULT 0,
     note VARCHAR(255),
     created_at DATETIME NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS fund_ledger (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fund_type VARCHAR(20) NOT NULL,
+    bank_account_id INTEGER,
+    tx_date DATE NOT NULL,
+    zone VARCHAR(150),
+    content VARCHAR(255) NOT NULL,
+    amount_in DECIMAL(14,0) NOT NULL DEFAULT 0,
+    amount_out DECIMAL(14,0) NOT NULL DEFAULT 0,
+    note VARCHAR(255),
+    is_closing TINYINT NOT NULL DEFAULT 0,
+    attachment_path VARCHAR(255),
+    created_at DATETIME NOT NULL,
+    FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS reminders (
@@ -160,3 +200,20 @@ CREATE TABLE IF NOT EXISTS settings (
 
 INSERT OR IGNORE INTO users (id, full_name, username, password_hash, role, is_active, created_at)
 VALUES (1, 'Quan tri vien', 'admin', '$2y$12$5DodMIMG6WDRxjD13mXMe.YTx81cjUVnUD/P1IldyrcYkTIMbOtAG', 'admin', 1, datetime('now'));
+
+INSERT INTO cleaning_price_list (work_type, work_item, unit, unit_price, created_at, updated_at) VALUES
+('OUT', '1', 'phong', 70000, datetime('now'), datetime('now')),
+('OUT', '2', 'phong', 110000, datetime('now'), datetime('now')),
+('OUT', '3', 'phong', 150000, datetime('now'), datetime('now')),
+('OUT', '4', 'phong', 250000, datetime('now'), datetime('now')),
+('OUT', 'Set up 1PN', 'phong', 70000, datetime('now'), datetime('now')),
+('OUT', 'Set up 2PN', 'phong', 110000, datetime('now'), datetime('now')),
+('OUT', 'Set up 3PN', 'phong', 150000, datetime('now'), datetime('now')),
+('LUU', '1', 'phong', 65000, datetime('now'), datetime('now')),
+('LUU', '2', 'phong', 100000, datetime('now'), datetime('now')),
+('LUU', '3', 'phong', 140000, datetime('now'), datetime('now')),
+('LUU', '4', 'phong', 240000, datetime('now'), datetime('now')),
+('LUU', 'Set up 1PN', 'phong', 65000, datetime('now'), datetime('now')),
+('LUU', 'Set up 2PN', 'phong', 100000, datetime('now'), datetime('now')),
+('LUU', 'Set up 3PN', 'phong', 140000, datetime('now'), datetime('now')),
+('Khac', 'Tổng vệ sinh', 'gio', 65000, datetime('now'), datetime('now'));

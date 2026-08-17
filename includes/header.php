@@ -37,6 +37,7 @@ function nav_active(string $needle, string $path): string
       <a href="<?= url('/deals/long.php') ?>" class="<?= nav_active('/deals/long', $path) ?>"><i class="bi bi-receipt"></i> Doanh thu dài hạn</a>
       <a href="<?= url('/expenses/index.php') ?>" class="<?= nav_active('/expenses/', $path) ?>"><i class="bi bi-cash-coin"></i> Chi phí</a>
       <a href="<?= url('/cleaning/index.php') ?>" class="<?= nav_active('/cleaning/', $path) ?>"><i class="bi bi-bucket"></i> Tiền lương vệ sinh</a>
+      <a href="<?= url('/funds/index.php') ?>" class="<?= nav_active('/funds/', $path) ?>"><i class="bi bi-journal-text"></i> Sổ quỹ</a>
       <a href="<?= url('/reconciliation/index.php') ?>" class="<?= nav_active('/reconciliation/', $path) ?>"><i class="bi bi-bank"></i> Đối soát ngân hàng</a>
       <a href="<?= url('/reports/index.php') ?>" class="<?= nav_active('/reports/', $path) ?>"><i class="bi bi-graph-up"></i> Báo cáo</a>
 

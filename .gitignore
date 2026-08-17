@@ -2,6 +2,8 @@
 /database/local.sqlite
 /uploads/contracts/*
 !/uploads/contracts/.gitkeep
+/uploads/fund_ledger/*
+!/uploads/fund_ledger/.gitkeep
 .DS_Store
 Thumbs.db
 *.log

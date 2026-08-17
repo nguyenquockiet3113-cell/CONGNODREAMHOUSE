@@ -40,3 +40,18 @@ function deal_period_label(int $index, string $start): string
 {
     return 'Kỳ ' . $index . ' (Tháng ' . date('n/Y', strtotime($start)) . ')';
 }
+
+/** Tinh lai tong da thanh toan (paid_amount) va payment_status cua 1 deal tu bang deal_payments. */
+function recompute_deal_paid_amount(PDO $pdo, int $dealId): void
+{
+    $sumStmt = $pdo->prepare('SELECT COALESCE(SUM(amount),0) s FROM deal_payments WHERE deal_id = ?');
+    $sumStmt->execute([$dealId]);
+    $paid = (float)$sumStmt->fetch()['s'];
+
+    $dealStmt = $pdo->prepare('SELECT total_amount FROM deals WHERE id = ?');
+    $dealStmt->execute([$dealId]);
+    $total = (float)($dealStmt->fetch()['total_amount'] ?? 0);
+
+    $status = $paid >= $total && $total > 0 ? 'paid' : 'unpaid';
+    $pdo->prepare('UPDATE deals SET paid_amount = ?, payment_status = ? WHERE id = ?')->execute([$paid, $status, $dealId]);
+}

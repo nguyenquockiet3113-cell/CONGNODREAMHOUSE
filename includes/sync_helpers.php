@@ -1,8 +1,8 @@
 <?php
 /** Danh sach bang du lieu duoc phep dong bo voi Google Sheets */
 const SYNC_TABLES = [
-    'rooms', 'contracts', 'deals', 'deal_periods',
-    'expenses', 'cleaning_logs', 'reminders', 'bank_accounts',
+    'rooms', 'contracts', 'deals', 'deal_periods', 'deal_payments',
+    'expenses', 'cleaning_price_list', 'cleaning_logs', 'fund_ledger', 'reminders', 'bank_accounts',
 ];
 
 function get_table_columns(PDO $pdo, string $table): array

@@ -20,21 +20,24 @@ $logs = $stmt->fetchAll();
 $staffList = $pdo->query('SELECT DISTINCT staff_name FROM cleaning_logs ORDER BY staff_name')->fetchAll(PDO::FETCH_COLUMN);
 
 // Tong luong theo tung nhan vien (trong khoang loc ngay, khong phu thuoc staffFilter de hien thi bang tong)
-$sumSql = 'SELECT staff_name, COALESCE(SUM(price + plus),0) total FROM cleaning_logs WHERE work_date BETWEEN ? AND ? GROUP BY staff_name ORDER BY total DESC';
+$sumSql = 'SELECT staff_name, COALESCE(SUM(price + plus - penalty),0) total FROM cleaning_logs WHERE work_date BETWEEN ? AND ? GROUP BY staff_name ORDER BY total DESC';
 $sumStmt = $pdo->prepare($sumSql);
 $sumStmt->execute([$fromDate, $toDate]);
 $staffTotals = $sumStmt->fetchAll();
 $grandTotal = array_sum(array_column($staffTotals, 'total'));
 
 $filteredTotal = 0;
-foreach ($logs as $l) { $filteredTotal += (float)$l['price'] + (float)$l['plus']; }
+foreach ($logs as $l) { $filteredTotal += (float)$l['price'] + (float)$l['plus'] - (float)$l['penalty']; }
 
 $pageTitle = 'Tiền lương vệ sinh';
 require_once __DIR__ . '/../includes/header.php';
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <h4 class="mb-0"><i class="bi bi-bucket"></i> Tiền lương vệ sinh</h4>
-  <a href="<?= url('/cleaning/form.php') ?>" class="btn btn-success"><i class="bi bi-plus-lg"></i> Thêm công việc</a>
+  <div class="d-flex gap-2">
+    <a href="<?= url('/cleaning/prices.php') ?>" class="btn btn-outline-secondary"><i class="bi bi-tags"></i> Bảng giá</a>
+    <a href="<?= url('/cleaning/form.php') ?>" class="btn btn-success"><i class="bi bi-plus-lg"></i> Thêm công việc</a>
+  </div>
 </div>
 
 <div class="row g-3">
@@ -81,8 +84,10 @@ require_once __DIR__ . '/../includes/header.php';
               <th>PN</th>
               <th>Hạng mục</th>
               <th>Loại</th>
+              <th class="text-end">Giờ</th>
               <th class="text-end">Price</th>
               <th class="text-end">Plus</th>
+              <th class="text-end">Phạt</th>
               <th class="text-end">Total</th>
               <th>Note</th>
               <th></th>
@@ -90,7 +95,7 @@ require_once __DIR__ . '/../includes/header.php';
           </thead>
           <tbody>
             <?php if (!$logs): ?>
-              <tr><td colspan="11" class="text-center text-muted py-4">Chưa có dữ liệu.</td></tr>
+              <tr><td colspan="12" class="text-center text-muted py-4">Chưa có dữ liệu.</td></tr>
             <?php endif; ?>
             <?php foreach ($logs as $l): ?>
               <tr>
@@ -100,9 +105,11 @@ require_once __DIR__ . '/../includes/header.php';
                 <td><?= e($l['bedrooms']) ?></td>
                 <td><?= e($l['work_item']) ?></td>
                 <td><?= e($l['work_type']) ?></td>
+                <td class="text-end"><?= e($l['hours']) ?></td>
                 <td class="text-end"><?= money($l['price']) ?></td>
                 <td class="text-end"><?= $l['plus'] > 0 ? money($l['plus']) : '' ?></td>
-                <td class="text-end fw-semibold"><?= money((float)$l['price'] + (float)$l['plus']) ?></td>
+                <td class="text-end text-danger"><?= $l['penalty'] > 0 ? money($l['penalty']) : '' ?></td>
+                <td class="text-end fw-semibold"><?= money((float)$l['price'] + (float)$l['plus'] - (float)$l['penalty']) ?></td>
                 <td class="small"><?= e($l['note']) ?></td>
                 <td class="text-end">
                   <a href="<?= url('/cleaning/form.php?id=' . $l['id']) ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>

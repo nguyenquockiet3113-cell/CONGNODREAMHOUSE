@@ -85,6 +85,7 @@ require_once __DIR__ . '/../includes/header.php';
             <td><span class="badge bg-<?= badge_class($c['status']) ?>"><?= e(CONTRACT_STATUS_LABELS[$c['status']] ?? $c['status']) ?></span></td>
             <td class="text-end">
               <a href="<?= url('/contracts/view.php?id=' . $c['id']) ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a>
+              <a href="<?= url('/contracts/print.php?id=' . $c['id']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer"></i></a>
               <a href="<?= url('/contracts/form.php?id=' . $c['id']) ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
               <form method="post" action="<?= url('/contracts/delete.php') ?>" class="d-inline" data-confirm="Xóa hợp đồng <?= e($c['contract_code']) ?>?">
                 <?= csrf_field() ?>

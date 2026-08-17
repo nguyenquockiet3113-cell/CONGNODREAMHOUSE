@@ -6,10 +6,11 @@ Phần mềm quản lý cho thuê phòng / chung cư mini / căn hộ dịch v�
 
 - **Dashboard**: tổng quan số phòng, doanh thu/chi phí tháng, lợi nhuận, hợp đồng sắp hết hạn, nợ tồn đọng, biểu đồ 6 tháng gần nhất.
 - **Khu & Phòng**: danh mục phòng tối giản theo **khu vực** (VD: Vinhomes Central Park), mã phòng, số phòng ngủ. Mã phòng có thể tự nhập tay ở các form khác, không bắt buộc phải có sẵn trong danh mục.
-- **Hợp đồng**: hồ sơ pháp lý theo đúng mẫu hợp đồng thuê thực tế (bên thuê, bên cho thuê, tiền thuê/cọc, thời hạn, hình thức thanh toán), đính kèm file hợp đồng.
-- **Doanh thu ngắn hạn & dài hạn (Deals)**: nhập **một lần duy nhất** (check-in/check-out, đơn giá...), hệ thống tự phân loại Ngắn hạn/Dài hạn theo quy ước **1 tháng = 30 ngày** (≥ 30 đêm là dài hạn) và **tự động sinh các kỳ công nợ 30 ngày** cho deal dài hạn (thuê/cọc/điện nước/đã thanh toán từng kỳ).
+- **Hợp đồng**: hồ sơ pháp lý theo đúng mẫu hợp đồng thuê thực tế (bên thuê, bên cho thuê, tiền thuê/cọc, thời hạn, hình thức thanh toán), đính kèm file hợp đồng, **in hợp đồng** theo layout mẫu (Ctrl+P).
+- **Doanh thu ngắn hạn & dài hạn (Deals)**: nhập **một lần duy nhất** (check-in/check-out, đơn giá...), hệ thống tự phân loại Ngắn hạn/Dài hạn theo quy ước **1 tháng = 30 ngày** (≥ 30 đêm là dài hạn) và **tự động sinh các kỳ công nợ 30 ngày** cho deal dài hạn (thuê/cọc/điện nước/đã thanh toán từng kỳ, xem nhanh qua popup). Hỗ trợ **thanh toán nhiều lần** (lịch sử từng lần thu tiền) và **xuất/nhập CSV** cho doanh thu ngắn hạn.
 - **Chi phí**: ghi nhận chi phí theo danh mục (điện, nước, phí quản lý, lương, sửa chữa...), lọc theo tháng.
-- **Tiền lương vệ sinh**: chấm công nhân viên vệ sinh theo ngày/phòng/hạng mục việc, lọc theo nhân viên + khoảng ngày ra tổng lương.
+- **Tiền lương vệ sinh**: chấm công nhân viên vệ sinh theo ngày/phòng/hạng mục việc (có **bảng giá tự chỉnh sửa**, hỗ trợ tính theo giờ và trừ phạt), lọc theo nhân viên + khoảng ngày ra tổng lương.
+- **Sổ quỹ**: sổ Tiền mặt / Quỹ ngân hàng (theo từng tài khoản) / Quỹ công ty, số dư lũy kế tự tính, dòng "chốt quỹ" có đính kèm ảnh đối chiếu.
 - **Báo cáo**: doanh thu - chi phí - lợi nhuận theo tháng (6/12/24 tháng), cơ cấu chi phí, tỷ lệ lấp đầy phòng.
 - **Nhắc nhở**: danh sách việc cần nhắc tự tạo, đánh dấu hoàn thành.
 - **Tài khoản ngân hàng & Đối soát**: gắn giao dịch thu/chi với tài khoản ngân hàng, đánh dấu đã đối soát với sao kê.

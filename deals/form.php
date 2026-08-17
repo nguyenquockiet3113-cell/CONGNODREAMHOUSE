@@ -12,6 +12,7 @@ $deal = [
     'payment_status' => 'unpaid', 'note' => '',
 ];
 $periods = [];
+$payments = [];
 $errors = [];
 
 if ($id) {
@@ -26,6 +27,10 @@ if ($id) {
     $pStmt = $pdo->prepare('SELECT * FROM deal_periods WHERE deal_id = ? ORDER BY period_index');
     $pStmt->execute([$id]);
     $periods = $pStmt->fetchAll();
+
+    $payStmt = $pdo->prepare('SELECT * FROM deal_payments WHERE deal_id = ? ORDER BY payment_date DESC, id DESC');
+    $payStmt->execute([$id]);
+    $payments = $payStmt->fetchAll();
 }
 
 $rooms = $pdo->query('SELECT room_code, zone, bedrooms FROM rooms ORDER BY room_code')->fetchAll();
@@ -45,8 +50,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $deal['extra_fee'] = (float)($_POST['extra_fee'] ?? 0);
     $deal['payment_method'] = $_POST['payment_method'] ?? 'chuyen_khoan';
     $deal['receiving_account'] = trim($_POST['receiving_account'] ?? '');
-    $deal['paid_amount'] = (float)($_POST['paid_amount'] ?? 0);
-    $deal['payment_status'] = isset($_POST['payment_status']) ? 'paid' : 'unpaid';
     $deal['note'] = trim($_POST['note'] ?? '');
 
     if ($deal['room_code'] === '') $errors[] = 'Vui lòng nhập mã phòng.';
@@ -65,14 +68,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cols = [
             'room_code', 'bedrooms', 'zone', 'guest_name', 'checkin_date', 'checkout_date',
             'nights', 'deal_type', 'price_per_unit', 'deposit_amount', 'deposit_date', 'extra_fee',
-            'total_amount', 'payment_method', 'receiving_account', 'paid_amount', 'payment_status', 'note',
+            'total_amount', 'payment_method', 'receiving_account', 'note',
         ];
         $values = [
             $deal['room_code'], $deal['bedrooms'], $deal['zone'], $deal['guest_name'],
             $deal['checkin_date'], $deal['checkout_date'], $nights, $dealType,
             $deal['price_per_unit'], $deal['deposit_amount'], $deal['deposit_date'], $deal['extra_fee'],
-            $total, $deal['payment_method'], $deal['receiving_account'], $deal['paid_amount'],
-            $deal['payment_status'], $deal['note'],
+            $total, $deal['payment_method'], $deal['receiving_account'], $deal['note'],
         ];
 
         if ($id) {
@@ -97,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 generate_deal_periods($pdo, $id, $deal['checkin_date'], $deal['checkout_date'], $deal['price_per_unit'], $deal['deposit_amount']);
             }
 
+            recompute_deal_paid_amount($pdo, $id);
             flash('success', 'Đã cập nhật deal.');
         } else {
             $cols[] = 'created_at';
@@ -205,13 +208,13 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
         <div class="col-md-3">
           <label class="form-label">Đã CK/TM (đ)</label>
-          <input type="number" step="1000" name="paid_amount" class="form-control" value="<?= e($deal['paid_amount']) ?>">
+          <input type="text" class="form-control" disabled value="<?= money($deal['paid_amount']) ?>">
+          <div class="form-text">Cộng dồn từ lịch sử thanh toán bên dưới, không nhập trực tiếp.</div>
         </div>
         <div class="col-md-3 d-flex align-items-end">
-          <div class="form-check">
-            <input type="checkbox" name="payment_status" id="payment_status" class="form-check-input" <?= $deal['payment_status'] === 'paid' ? 'checked' : '' ?>>
-            <label class="form-check-label" for="payment_status">Đã thanh toán đủ</label>
-          </div>
+          <span class="badge bg-<?= $deal['payment_status'] === 'paid' ? 'success' : 'secondary' ?> py-2 px-3">
+            <?= $deal['payment_status'] === 'paid' ? 'Đã thanh toán đủ' : 'Chưa thanh toán đủ' ?>
+          </span>
         </div>
 
         <div class="col-12">
@@ -268,6 +271,66 @@ require_once __DIR__ . '/../includes/header.php';
     <?php endif; ?>
   </div>
 </div>
+
+<?php if ($id): ?>
+<div class="card mb-3">
+  <div class="card-header">Lịch sử thanh toán</div>
+  <div class="card-body">
+    <?php if (!$payments): ?>
+      <div class="text-muted small mb-3">Chưa có lần thanh toán nào.</div>
+    <?php else: ?>
+      <table class="table table-sm mb-3">
+        <thead><tr><th>Ngày</th><th>Số tiền</th><th>Hình thức</th><th>Ghi chú</th><th></th></tr></thead>
+        <tbody>
+          <?php foreach ($payments as $p): ?>
+            <tr>
+              <td><?= vndate($p['payment_date']) ?></td>
+              <td class="fw-semibold"><?= money($p['amount']) ?></td>
+              <td><?= $p['method'] === 'tien_mat' ? 'Tiền mặt' : 'Chuyển khoản' ?></td>
+              <td class="small"><?= e($p['note']) ?></td>
+              <td class="text-end">
+                <form method="post" action="<?= url('/deals/delete_payment.php') ?>" data-confirm="Xóa lần thanh toán này?">
+                  <?= csrf_field() ?>
+                  <input type="hidden" name="payment_id" value="<?= $p['id'] ?>">
+                  <input type="hidden" name="deal_id" value="<?= $id ?>">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    <?php endif; ?>
+
+    <form method="post" action="<?= url('/deals/add_payment.php') ?>" class="row g-2 align-items-end">
+      <?= csrf_field() ?>
+      <input type="hidden" name="deal_id" value="<?= $id ?>">
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Ngày thanh toán</label>
+        <input type="date" name="payment_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Số tiền (đ)</label>
+        <input type="number" step="1000" name="amount" class="form-control" required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1">Hình thức</label>
+        <select name="method" class="form-select">
+          <option value="chuyen_khoan">Chuyển khoản</option>
+          <option value="tien_mat">Tiền mặt</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Ghi chú</label>
+        <input type="text" name="note" class="form-control">
+      </div>
+      <div class="col-md-1">
+        <button class="btn btn-success w-100"><i class="bi bi-plus-lg"></i></button>
+      </div>
+    </form>
+  </div>
+</div>
+<?php endif; ?>
 
 <script>
 var roomMap = <?= json_encode(array_map(fn($r) => ['zone' => $r['zone'], 'bedrooms' => $r['bedrooms']], array_column($rooms, null, 'room_code'))) ?>;

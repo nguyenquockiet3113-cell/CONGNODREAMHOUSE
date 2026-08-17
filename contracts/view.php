@@ -18,7 +18,10 @@ require_once __DIR__ . '/../includes/header.php';
   <h4 class="mb-0"><i class="bi bi-file-earmark-text"></i> Hợp đồng <?= e($contract['contract_code']) ?>
     <span class="badge bg-<?= badge_class($contract['status']) ?>"><?= e(CONTRACT_STATUS_LABELS[$contract['status']] ?? '') ?></span>
   </h4>
-  <a href="<?= url('/contracts/form.php?id=' . $contract['id']) ?>" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Sửa</a>
+  <div class="d-flex gap-2">
+    <a href="<?= url('/contracts/print.php?id=' . $contract['id']) ?>" target="_blank" class="btn btn-outline-secondary"><i class="bi bi-printer"></i> In hợp đồng</a>
+    <a href="<?= url('/contracts/form.php?id=' . $contract['id']) ?>" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Sửa</a>
+  </div>
 </div>
 
 <div class="row g-3">

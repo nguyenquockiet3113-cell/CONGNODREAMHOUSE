@@ -139,6 +139,20 @@ CREATE TABLE IF NOT EXISTS deal_periods (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
+-- Lich su thanh toan cua Deal ngan han (ho tro thanh toan nhieu lan)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS deal_payments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    deal_id INT NOT NULL,
+    payment_date DATE NOT NULL,
+    amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    method VARCHAR(20) NOT NULL DEFAULT 'chuyen_khoan', -- tien_mat | chuyen_khoan
+    note VARCHAR(255) DEFAULT NULL,
+    created_at DATETIME NOT NULL,
+    CONSTRAINT fk_deal_payments_deal FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
 -- Bang chi phi
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS expenses (
@@ -156,6 +170,20 @@ CREATE TABLE IF NOT EXISTS expenses (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
+-- Bang gia ve sinh (co the sua khi gia thay doi)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS cleaning_price_list (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    work_type VARCHAR(50) NOT NULL, -- OUT | LUU | Khac
+    work_item VARCHAR(150) NOT NULL, -- vd: "1", "2", "Set up 1PN", "Tong ve sinh"
+    unit VARCHAR(20) NOT NULL DEFAULT 'phong', -- phong | gio
+    unit_price DECIMAL(14,0) NOT NULL DEFAULT 0,
+    note VARCHAR(255) DEFAULT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
 -- Bang cong nhat ky lam viec ve sinh (tinh luong)
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS cleaning_logs (
@@ -165,11 +193,32 @@ CREATE TABLE IF NOT EXISTS cleaning_logs (
     room_code VARCHAR(50) DEFAULT NULL,
     bedrooms INT DEFAULT NULL,
     work_item VARCHAR(150) DEFAULT NULL, -- hang muc, vd: "Set up 1PN"
-    work_type VARCHAR(100) DEFAULT NULL, -- loai cong viec
+    work_type VARCHAR(100) DEFAULT NULL, -- loai cong viec: OUT | LUU | Khac
+    hours DECIMAL(6,2) DEFAULT NULL, -- so gio (chi dung cho hang muc tinh theo gio)
     price DECIMAL(14,0) NOT NULL DEFAULT 0,
     plus DECIMAL(14,0) NOT NULL DEFAULT 0,
+    penalty DECIMAL(14,0) NOT NULL DEFAULT 0, -- phat
     note VARCHAR(255) DEFAULT NULL,
     created_at DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
+-- So quy: Tien mat / Quy ngan hang (theo tung TK) / Quy cong ty
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS fund_ledger (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    fund_type VARCHAR(20) NOT NULL, -- cash | bank | company
+    bank_account_id INT DEFAULT NULL, -- chi dung khi fund_type = bank
+    tx_date DATE NOT NULL,
+    zone VARCHAR(150) DEFAULT NULL,
+    content VARCHAR(255) NOT NULL,
+    amount_in DECIMAL(14,0) NOT NULL DEFAULT 0,
+    amount_out DECIMAL(14,0) NOT NULL DEFAULT 0,
+    note VARCHAR(255) DEFAULT NULL,
+    is_closing TINYINT(1) NOT NULL DEFAULT 0, -- dong "CHOT QUY"
+    attachment_path VARCHAR(255) DEFAULT NULL,
+    created_at DATETIME NOT NULL,
+    CONSTRAINT fk_fund_bank FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
@@ -202,3 +251,23 @@ SET FOREIGN_KEY_CHECKS = 1;
 INSERT INTO users (full_name, username, password_hash, role, is_active, created_at)
 VALUES ('Quan tri vien', 'admin', '$2y$12$5DodMIMG6WDRxjD13mXMe.YTx81cjUVnUD/P1IldyrcYkTIMbOtAG', 'admin', 1, NOW())
 ON DUPLICATE KEY UPDATE username = username;
+
+-- ---------------------------------------------------------------------
+-- Bang gia ve sinh mac dinh (co the sua trong man hinh Cai dat bang gia)
+-- ---------------------------------------------------------------------
+INSERT INTO cleaning_price_list (work_type, work_item, unit, unit_price, created_at, updated_at) VALUES
+('OUT', '1', 'phong', 70000, NOW(), NOW()),
+('OUT', '2', 'phong', 110000, NOW(), NOW()),
+('OUT', '3', 'phong', 150000, NOW(), NOW()),
+('OUT', '4', 'phong', 250000, NOW(), NOW()),
+('OUT', 'Set up 1PN', 'phong', 70000, NOW(), NOW()),
+('OUT', 'Set up 2PN', 'phong', 110000, NOW(), NOW()),
+('OUT', 'Set up 3PN', 'phong', 150000, NOW(), NOW()),
+('LUU', '1', 'phong', 65000, NOW(), NOW()),
+('LUU', '2', 'phong', 100000, NOW(), NOW()),
+('LUU', '3', 'phong', 140000, NOW(), NOW()),
+('LUU', '4', 'phong', 240000, NOW(), NOW()),
+('LUU', 'Set up 1PN', 'phong', 65000, NOW(), NOW()),
+('LUU', 'Set up 2PN', 'phong', 100000, NOW(), NOW()),
+('LUU', 'Set up 3PN', 'phong', 140000, NOW(), NOW()),
+('Khac', 'Tổng vệ sinh', 'gio', 65000, NOW(), NOW());
