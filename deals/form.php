@@ -453,22 +453,34 @@ require_once __DIR__ . '/../includes/header.php';
     <?php if (!$payments): ?>
       <div class="text-muted small mb-3">Chưa có lần thanh toán nào.</div>
     <?php else: ?>
-      <table class="table table-sm mb-3">
-        <thead><tr><th>Ngày</th><th>Số tiền</th><th>Hình thức</th><th>TK nhận</th><th>Ghi chú</th><th></th></tr></thead>
+      <table class="table table-sm mb-3 align-middle">
+        <thead><tr><th style="width:160px;">Ngày</th><th style="width:150px;">Số tiền</th><th style="width:150px;">Hình thức</th><th style="width:220px;">TK nhận</th><th>Ghi chú</th><th class="text-end" style="width:110px;"></th></tr></thead>
         <tbody>
           <?php foreach ($payments as $p): ?>
             <tr>
-              <td><?= vndate($p['payment_date']) ?></td>
-              <td class="fw-semibold"><?= money($p['amount']) ?></td>
-              <td><?= $p['method'] === 'tien_mat' ? 'Tiền mặt' : 'Chuyển khoản' ?></td>
-              <td class="small"><?= $p['receiving_account'] ? e($p['receiving_account']) : '<span class="text-muted">—</span>' ?></td>
-              <td class="small"><?= e($p['note']) ?></td>
-              <td class="text-end">
-                <form method="post" action="<?= url('/deals/delete_payment.php') ?>" data-confirm="Xóa lần thanh toán này?">
+              <td colspan="6" class="p-0">
+                <form method="post" action="<?= url('/deals/update_payment.php') ?>" class="d-flex align-items-center gap-2 px-2 py-1">
                   <?= csrf_field() ?>
                   <input type="hidden" name="payment_id" value="<?= $p['id'] ?>">
                   <input type="hidden" name="deal_id" value="<?= $id ?>">
-                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                  <input type="date" name="payment_date" class="form-control form-control-sm" style="width:150px;" value="<?= e($p['payment_date']) ?>" required>
+                  <input type="number" step="1000" name="amount" class="form-control form-control-sm" style="width:140px;" value="<?= e($p['amount']) ?>" required>
+                  <select name="method" class="form-select form-select-sm" style="width:140px;">
+                    <option value="chuyen_khoan" <?= $p['method'] === 'chuyen_khoan' ? 'selected' : '' ?>>Chuyển khoản</option>
+                    <option value="tien_mat" <?= $p['method'] === 'tien_mat' ? 'selected' : '' ?>>Tiền mặt</option>
+                  </select>
+                  <select name="receiving_account" class="form-select form-select-sm" style="width:210px;">
+                    <option value="">-- Theo deal --</option>
+                    <?php foreach ($recvOptions as $opt): ?>
+                      <option value="<?= e($opt) ?>" <?= (string)$p['receiving_account'] === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
+                    <?php endforeach; ?>
+                    <?php if ($p['receiving_account'] !== '' && !in_array($p['receiving_account'], $recvOptions, true)): ?>
+                      <option value="<?= e($p['receiving_account']) ?>" selected><?= e($p['receiving_account']) ?></option>
+                    <?php endif; ?>
+                  </select>
+                  <input type="text" name="note" class="form-control form-control-sm flex-grow-1" value="<?= e($p['note']) ?>">
+                  <button type="submit" class="btn btn-sm btn-outline-success" title="Lưu"><i class="bi bi-check-lg"></i></button>
+                  <button type="submit" formaction="<?= url('/deals/delete_payment.php') ?>" formnovalidate class="btn btn-sm btn-outline-danger" onclick="return confirm('Xóa lần thanh toán này?')" title="Xóa"><i class="bi bi-trash"></i></button>
                 </form>
               </td>
             </tr>
