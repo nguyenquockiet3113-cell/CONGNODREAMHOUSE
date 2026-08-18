@@ -3,11 +3,22 @@ require_once __DIR__ . '/../config/config.php';
 require_login();
 
 $staffFilter = trim($_GET['staff'] ?? '');
-$fromDate = $_GET['from'] ?? date('Y-m-01');
-$toDate = $_GET['to'] ?? date('Y-m-d');
 
-$sql = 'SELECT * FROM cleaning_logs WHERE work_date BETWEEN ? AND ?';
-$params = [$fromDate, $toDate];
+// Lan dau ghe trang (khong co tham so nao tren URL) -> mac dinh thang nay.
+// Da co tham so filter (ke ca bam "Bo loc" gui rong) -> tон trong theo dung gia tri, rong nghia la khong gioi han ngay.
+$hasFilterParams = isset($_GET['from']) || isset($_GET['to']) || isset($_GET['staff']);
+if ($hasFilterParams) {
+    $fromDate = trim($_GET['from'] ?? '');
+    $toDate = trim($_GET['to'] ?? '');
+} else {
+    $fromDate = date('Y-m-01');
+    $toDate = date('Y-m-d');
+}
+
+$sql = 'SELECT * FROM cleaning_logs WHERE 1=1';
+$params = [];
+if ($fromDate !== '') { $sql .= ' AND work_date >= ?'; $params[] = $fromDate; }
+if ($toDate !== '') { $sql .= ' AND work_date <= ?'; $params[] = $toDate; }
 if ($staffFilter !== '') {
     $sql .= ' AND staff_name = ?';
     $params[] = $staffFilter;
@@ -20,9 +31,13 @@ $logs = $stmt->fetchAll();
 $staffList = $pdo->query('SELECT DISTINCT staff_name FROM cleaning_logs ORDER BY staff_name')->fetchAll(PDO::FETCH_COLUMN);
 
 // Tong luong theo tung nhan vien (trong khoang loc ngay, khong phu thuoc staffFilter de hien thi bang tong)
-$sumSql = 'SELECT staff_name, COALESCE(SUM(price + plus - penalty),0) total FROM cleaning_logs WHERE work_date BETWEEN ? AND ? GROUP BY staff_name ORDER BY total DESC';
+$sumSql = 'SELECT staff_name, COALESCE(SUM(price + plus - penalty),0) total FROM cleaning_logs WHERE 1=1';
+$sumParams = [];
+if ($fromDate !== '') { $sumSql .= ' AND work_date >= ?'; $sumParams[] = $fromDate; }
+if ($toDate !== '') { $sumSql .= ' AND work_date <= ?'; $sumParams[] = $toDate; }
+$sumSql .= ' GROUP BY staff_name ORDER BY total DESC';
 $sumStmt = $pdo->prepare($sumSql);
-$sumStmt->execute([$fromDate, $toDate]);
+$sumStmt->execute($sumParams);
 $staffTotals = $sumStmt->fetchAll();
 $grandTotal = array_sum(array_column($staffTotals, 'total'));
 
@@ -65,6 +80,9 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
           <div class="col-sm-2">
             <button class="btn btn-outline-secondary w-100"><i class="bi bi-search"></i> Lọc</button>
+          </div>
+          <div class="col-12">
+            <a href="<?= url('/cleaning/index.php?from=&to=&staff=') ?>" class="btn btn-link btn-sm px-0">Bỏ lọc - xem toàn bộ từ trước đến nay</a>
           </div>
         </form>
       </div>

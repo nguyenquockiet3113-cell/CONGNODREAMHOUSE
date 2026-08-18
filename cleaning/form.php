@@ -99,22 +99,24 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <div class="col-md-3">
-          <label class="form-label">Loại (OUT/LƯU...)</label>
+          <label class="form-label">Loại (OUT/LƯU...) *</label>
           <select name="work_type" id="work_type" class="form-select">
             <option value="">-- Chọn --</option>
             <?php foreach ($workTypes as $wt): ?>
               <option value="<?= e($wt) ?>" <?= $log['work_type'] === $wt ? 'selected' : '' ?>><?= e($wt) ?></option>
             <?php endforeach; ?>
           </select>
+          <div class="form-text">Tự tính giá theo Số PN ở bảng giá.</div>
         </div>
         <div class="col-md-3">
-          <label class="form-label">Hạng mục</label>
+          <label class="form-label">Hạng mục (tùy chọn)</label>
           <select name="work_item" id="work_item" class="form-select">
-            <option value="">-- Chọn --</option>
+            <option value="">-- Không chọn (dùng giá theo Số PN) --</option>
             <?php foreach ($priceList as $pl): ?>
               <option value="<?= e($pl['work_item']) ?>" data-type="<?= e($pl['work_type']) ?>" data-unit="<?= e($pl['unit']) ?>" data-price="<?= $pl['unit_price'] ?>" <?= $log['work_item'] === $pl['work_item'] ? 'selected' : '' ?>><?= e($pl['work_item']) ?> (<?= e($pl['work_type']) ?>)</option>
             <?php endforeach; ?>
           </select>
+          <div class="form-text">Nếu chọn, giá của hạng mục sẽ ưu tiên hơn giá tự tính theo Số PN.</div>
         </div>
         <div class="col-md-2" id="hoursWrap" style="display:none;">
           <label class="form-label">Số giờ</label>
@@ -149,35 +151,61 @@ require_once __DIR__ . '/../includes/header.php';
 
 <script>
 var roomBedrooms = <?= json_encode(array_column($rooms, 'bedrooms', 'room_code')) ?>;
-document.getElementById('cl_room_code').addEventListener('change', function () {
+document.getElementById('cl_room_code').addEventListener('input', function () {
   var b = roomBedrooms[this.value];
   var bField = document.getElementById('cl_bedrooms');
-  if (b && !bField.value) bField.value = b;
+  if (b) {
+    bField.value = b;
+    if (typeof applyAutoPrice === 'function') applyAutoPrice();
+  }
 });
 
 var workItemSelect = document.getElementById('work_item');
 var workTypeSelect = document.getElementById('work_type');
+var bedroomsInput = document.getElementById('cl_bedrooms');
 var hoursWrap = document.getElementById('hoursWrap');
 var hoursInput = document.getElementById('hours');
 var priceInput = document.getElementById('price');
 
+// priceMap[work_type][work_item] = {unit, price}
+var priceMap = {};
+<?php foreach ($priceList as $pl): ?>
+priceMap['<?= addslashes($pl['work_type']) ?>'] = priceMap['<?= addslashes($pl['work_type']) ?>'] || {};
+priceMap['<?= addslashes($pl['work_type']) ?>']['<?= addslashes($pl['work_item']) ?>'] = { unit: '<?= addslashes($pl['unit']) ?>', price: <?= (float)$pl['unit_price'] ?> };
+<?php endforeach; ?>
+
+// Hạng mục cụ thể được chọn -> gia hang muc uu tien
 function applyItemPrice() {
   var opt = workItemSelect.options[workItemSelect.selectedIndex];
-  if (!opt || !opt.value) return;
+  if (!opt || !opt.value) return false;
   workTypeSelect.value = opt.getAttribute('data-type');
   var unit = opt.getAttribute('data-unit');
   var unitPrice = parseFloat(opt.getAttribute('data-price')) || 0;
   if (unit === 'gio') {
     hoursWrap.style.display = '';
-    var h = parseFloat(hoursInput.value) || 1;
     if (!hoursInput.value) hoursInput.value = 1;
     priceInput.value = Math.round(unitPrice * (parseFloat(hoursInput.value) || 1));
   } else {
     hoursWrap.style.display = 'none';
     priceInput.value = unitPrice;
   }
+  return true;
 }
-workItemSelect.addEventListener('change', applyItemPrice);
+
+// Chua chon hang muc cu the -> tu tinh gia theo Loai + So PN
+function applyAutoPrice() {
+  if (applyItemPrice()) return; // hang muc da chon, uu tien gia hang muc
+  hoursWrap.style.display = 'none';
+  var type = workTypeSelect.value;
+  var bedrooms = bedroomsInput.value;
+  if (type && bedrooms && priceMap[type] && priceMap[type][bedrooms]) {
+    priceInput.value = priceMap[type][bedrooms].price;
+  }
+}
+
+workTypeSelect.addEventListener('change', applyAutoPrice);
+bedroomsInput.addEventListener('input', applyAutoPrice);
+workItemSelect.addEventListener('change', applyAutoPrice);
 hoursInput.addEventListener('input', function () {
   var opt = workItemSelect.options[workItemSelect.selectedIndex];
   if (opt && opt.getAttribute('data-unit') === 'gio') {

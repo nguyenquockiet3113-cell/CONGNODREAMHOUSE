@@ -3,11 +3,13 @@ require_once __DIR__ . '/../config/config.php';
 require_login();
 
 $staffFilter = trim($_GET['staff'] ?? '');
-$fromDate = $_GET['from'] ?? date('Y-m-01');
-$toDate = $_GET['to'] ?? date('Y-m-d');
+$fromDate = trim($_GET['from'] ?? '');
+$toDate = trim($_GET['to'] ?? '');
 
-$sql = 'SELECT * FROM cleaning_logs WHERE work_date BETWEEN ? AND ?';
-$params = [$fromDate, $toDate];
+$sql = 'SELECT * FROM cleaning_logs WHERE 1=1';
+$params = [];
+if ($fromDate !== '') { $sql .= ' AND work_date >= ?'; $params[] = $fromDate; }
+if ($toDate !== '') { $sql .= ' AND work_date <= ?'; $params[] = $toDate; }
 if ($staffFilter !== '') {
     $sql .= ' AND staff_name = ?';
     $params[] = $staffFilter;
@@ -17,8 +19,9 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $logs = $stmt->fetchAll();
 
+$rangeLabel = ($fromDate ?: 'tatca') . '_' . ($toDate ?: 'nay');
 header('Content-Type: text/csv; charset=UTF-8');
-header('Content-Disposition: attachment; filename="luong-ve-sinh-' . $fromDate . '_' . $toDate . '.csv"');
+header('Content-Disposition: attachment; filename="luong-ve-sinh-' . $rangeLabel . '.csv"');
 
 $out = fopen('php://output', 'w');
 fwrite($out, "\xEF\xBB\xBF");
