@@ -35,6 +35,7 @@ require_once __DIR__ . '/../includes/header.php';
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <h4 class="mb-0"><i class="bi bi-bucket"></i> Tiền lương vệ sinh</h4>
   <div class="d-flex gap-2">
+    <a href="<?= url('/cleaning/export.php?' . http_build_query($_GET)) ?>" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-arrow-down"></i> Xuất Excel</a>
     <a href="<?= url('/cleaning/prices.php') ?>" class="btn btn-outline-secondary"><i class="bi bi-tags"></i> Bảng giá</a>
     <a href="<?= url('/cleaning/form.php') ?>" class="btn btn-success"><i class="bi bi-plus-lg"></i> Thêm công việc</a>
   </div>
