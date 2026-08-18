@@ -63,6 +63,26 @@ function generate_deal_periods(PDO $pdo, int $dealId, string $checkin, string $c
     }
 }
 
+/**
+ * Tim cac deal khac cung phong bi trung lich (chong lan ngay o) voi khoang [checkin, checkout).
+ * Bo qua deal da huy (status = cancelled) va deal dang sua (excludeId).
+ */
+function find_overlapping_deals(PDO $pdo, string $roomCode, string $checkin, string $checkout, int $excludeId = 0): array
+{
+    if ($roomCode === '' || !$checkin || !$checkout) return [];
+    $sql = "SELECT id, guest_name, checkin_date, checkout_date, deal_type FROM deals
+            WHERE room_code = ? AND checkin_date < ? AND checkout_date > ? AND status != 'cancelled'";
+    $params = [$roomCode, $checkout, $checkin];
+    if ($excludeId) {
+        $sql .= ' AND id != ?';
+        $params[] = $excludeId;
+    }
+    $sql .= ' ORDER BY checkin_date ASC';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetchAll();
+}
+
 function deal_period_label(int $index, string $start): string
 {
     return 'Kỳ ' . $index . ' (Tháng ' . date('n/Y', strtotime($start)) . ')';

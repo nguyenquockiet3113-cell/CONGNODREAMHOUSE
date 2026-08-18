@@ -66,6 +66,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!$errors) {
+        $conflicts = find_overlapping_deals($pdo, $deal['room_code'], $deal['checkin_date'], $deal['checkout_date'], $id);
+        if ($conflicts) {
+            $conflictText = implode('; ', array_map(fn($c) => $c['guest_name'] . ' (' . vndate($c['checkin_date']) . ' - ' . vndate($c['checkout_date']) . ')', $conflicts));
+            flash('warning', '⚠️ Trùng lịch phòng ' . $deal['room_code'] . ' với: ' . $conflictText);
+        }
+
         $nights = deal_nights($deal['checkin_date'], $deal['checkout_date']);
         $dealType = deal_classify($nights);
         $rentTotal = deal_rent_total($nights, $deal['price_per_unit'], $dealType);
@@ -170,6 +176,8 @@ require_once __DIR__ . '/../includes/header.php';
 <?php foreach ($errors as $err): ?>
   <div class="alert alert-danger py-2"><?= e($err) ?></div>
 <?php endforeach; ?>
+
+<div id="overlapWarning" class="alert alert-warning py-2" style="display:none;"></div>
 
 <div class="card mb-3">
   <div class="card-body">
@@ -473,6 +481,38 @@ function applyRoomInfo() {
 }
 document.getElementById('room_code').addEventListener('input', applyRoomInfo);
 document.getElementById('room_code').addEventListener('change', applyRoomInfo);
+
+var overlapTimer = null;
+var overlapBox = document.getElementById('overlapWarning');
+var currentDealId = <?= (int)$id ?>;
+function checkOverlap() {
+  var roomCode = document.getElementById('room_code').value.trim();
+  var checkin = document.getElementById('checkin_date').value;
+  var checkout = document.getElementById('checkout_date').value;
+  if (!roomCode || !checkin || !checkout) { overlapBox.style.display = 'none'; return; }
+  var url = '<?= url('/deals/check_overlap.php') ?>?room_code=' + encodeURIComponent(roomCode)
+    + '&checkin=' + encodeURIComponent(checkin) + '&checkout=' + encodeURIComponent(checkout)
+    + '&exclude_id=' + currentDealId;
+  fetch(url).then(function (r) { return r.json(); }).then(function (data) {
+    if (data.conflicts && data.conflicts.length) {
+      var lines = data.conflicts.map(function (c) {
+        return c.guest_name + ' (' + c.checkin + ' - ' + c.checkout + ', ' + c.deal_type + ')';
+      });
+      overlapBox.innerHTML = '⚠️ <strong>Trùng lịch phòng ' + roomCode + '</strong> với: ' + lines.join('; ');
+      overlapBox.style.display = '';
+    } else {
+      overlapBox.style.display = 'none';
+    }
+  }).catch(function () {});
+}
+['room_code', 'checkin_date', 'checkout_date'].forEach(function (id) {
+  document.getElementById(id).addEventListener('input', function () {
+    clearTimeout(overlapTimer);
+    overlapTimer = setTimeout(checkOverlap, 400);
+  });
+  document.getElementById(id).addEventListener('change', checkOverlap);
+});
+checkOverlap();
 
 var saveAndNewBtn = document.getElementById('saveAndNewBtn');
 if (saveAndNewBtn) {

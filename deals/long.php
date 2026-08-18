@@ -273,6 +273,7 @@ require_once __DIR__ . '/../includes/header.php';
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
+          <div id="lr_overlapWarning" class="alert alert-warning py-2" style="display:none;"></div>
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Mã căn hộ *</label>
@@ -395,6 +396,35 @@ document.getElementById('lr_apply_vat').addEventListener('change', function () {
 });
 document.getElementById('addLongDealModal').addEventListener('shown.bs.modal', lrRecalc);
 lrRecalc();
+
+var lrOverlapTimer = null;
+var lrOverlapBox = document.getElementById('lr_overlapWarning');
+function lrCheckOverlap() {
+  var roomCode = document.getElementById('lr_room_code').value.trim();
+  var checkin = document.getElementById('lr_checkin').value;
+  var checkout = document.getElementById('lr_checkout').value;
+  if (!roomCode || !checkin || !checkout) { lrOverlapBox.style.display = 'none'; return; }
+  var url = '<?= url('/deals/check_overlap.php') ?>?room_code=' + encodeURIComponent(roomCode)
+    + '&checkin=' + encodeURIComponent(checkin) + '&checkout=' + encodeURIComponent(checkout);
+  fetch(url).then(function (r) { return r.json(); }).then(function (data) {
+    if (data.conflicts && data.conflicts.length) {
+      var lines = data.conflicts.map(function (c) {
+        return c.guest_name + ' (' + c.checkin + ' - ' + c.checkout + ', ' + c.deal_type + ')';
+      });
+      lrOverlapBox.innerHTML = '⚠️ <strong>Trùng lịch phòng ' + roomCode + '</strong> với: ' + lines.join('; ');
+      lrOverlapBox.style.display = '';
+    } else {
+      lrOverlapBox.style.display = 'none';
+    }
+  }).catch(function () {});
+}
+['lr_room_code', 'lr_checkin', 'lr_checkout'].forEach(function (id) {
+  document.getElementById(id).addEventListener('input', function () {
+    clearTimeout(lrOverlapTimer);
+    lrOverlapTimer = setTimeout(lrCheckOverlap, 400);
+  });
+  document.getElementById(id).addEventListener('change', lrCheckOverlap);
+});
 </script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

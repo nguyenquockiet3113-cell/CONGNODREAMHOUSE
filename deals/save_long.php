@@ -32,6 +32,12 @@ if ($errors) {
     redirect('/deals/long.php');
 }
 
+$conflicts = find_overlapping_deals($pdo, $roomCode, $checkin, $checkout);
+if ($conflicts) {
+    $conflictText = implode('; ', array_map(fn($c) => $c['guest_name'] . ' (' . vndate($c['checkin_date']) . ' - ' . vndate($c['checkout_date']) . ')', $conflicts));
+    flash('warning', '⚠️ Trùng lịch phòng ' . $roomCode . ' với: ' . $conflictText);
+}
+
 $nights = deal_nights($checkin, $checkout);
 $dealType = deal_classify($nights);
 $rentTotal = deal_rent_total($nights, $price, $dealType);
