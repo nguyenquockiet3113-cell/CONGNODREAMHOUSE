@@ -96,14 +96,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $electricity = (float)($_POST['period_electricity'][$i] ?? 0);
                 $water = (float)($_POST['period_water'][$i] ?? 0);
                 $management = (float)($_POST['period_management'][$i] ?? 0);
+                $internet = (float)($_POST['period_internet'][$i] ?? 0);
+                $cleaning = (float)($_POST['period_cleaning'][$i] ?? 0);
+                $vehicle = (float)($_POST['period_vehicle'][$i] ?? 0);
                 $other = (float)($_POST['period_other'][$i] ?? 0);
                 $pdo->prepare(
-                    'UPDATE deal_periods SET rent_amount=?, deposit_amount=?, electricity_amount=?, water_amount=?, management_fee_amount=?, other_fee_amount=?, utilities_amount=?, paid_amount=?, note=? WHERE id=? AND deal_id=?'
+                    'UPDATE deal_periods SET rent_amount=?, deposit_amount=?, electricity_amount=?, water_amount=?, management_fee_amount=?, internet_amount=?, cleaning_fee_amount=?, vehicle_fee_amount=?, other_fee_amount=?, utilities_amount=?, paid_amount=?, note=? WHERE id=? AND deal_id=?'
                 )->execute([
                     (float)($_POST['period_rent'][$i] ?? 0),
                     (float)($_POST['period_deposit'][$i] ?? 0),
-                    $electricity, $water, $management, $other,
-                    $electricity + $water + $management + $other,
+                    $electricity, $water, $management, $internet, $cleaning, $vehicle, $other,
+                    $electricity + $water + $management + $internet + $cleaning + $vehicle + $other,
                     (float)($_POST['period_paid'][$i] ?? 0),
                     trim($_POST['period_note'][$i] ?? ''),
                     (int)$pid, $id,
@@ -296,6 +299,9 @@ require_once __DIR__ . '/../includes/header.php';
                 <th style="width:100px;">Điện</th>
                 <th style="width:100px;">Nước</th>
                 <th style="width:100px;">Phí QL</th>
+                <th style="width:100px;">Internet</th>
+                <th style="width:100px;">Vệ sinh</th>
+                <th style="width:90px;">Xe</th>
                 <th style="width:100px;">Phí khác</th>
                 <th style="width:120px;" class="text-end">Tổng cần TT</th>
                 <th style="width:110px;">Đã TT</th>
@@ -317,6 +323,9 @@ require_once __DIR__ . '/../includes/header.php';
                   <td><input type="number" step="1000" name="period_electricity[]" class="form-control form-control-sm p-fee" value="<?= e($p['electricity_amount'] ?? 0) ?>"></td>
                   <td><input type="number" step="1000" name="period_water[]" class="form-control form-control-sm p-fee" value="<?= e($p['water_amount'] ?? 0) ?>"></td>
                   <td><input type="number" step="1000" name="period_management[]" class="form-control form-control-sm p-fee" value="<?= e($p['management_fee_amount'] ?? 0) ?>"></td>
+                  <td><input type="number" step="1000" name="period_internet[]" class="form-control form-control-sm p-fee" value="<?= e($p['internet_amount'] ?? 0) ?>"></td>
+                  <td><input type="number" step="1000" name="period_cleaning[]" class="form-control form-control-sm p-fee" value="<?= e($p['cleaning_fee_amount'] ?? 0) ?>"></td>
+                  <td><input type="number" step="1000" name="period_vehicle[]" class="form-control form-control-sm p-fee" value="<?= e($p['vehicle_fee_amount'] ?? 0) ?>"></td>
                   <td><input type="number" step="1000" name="period_other[]" class="form-control form-control-sm p-fee" value="<?= e($p['other_fee_amount'] ?? 0) ?>"></td>
                   <td class="text-end fw-semibold p-total">0 đ</td>
                   <td><input type="number" step="1000" name="period_paid[]" class="form-control form-control-sm p-paid" value="<?= e($p['paid_amount']) ?>"></td>

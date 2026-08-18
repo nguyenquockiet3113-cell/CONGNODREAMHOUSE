@@ -21,6 +21,68 @@ function vndate(?string $isoDate): string
     return $ts ? date('d/m/Y', $ts) : '';
 }
 
+/** Doc 1 nhom 3 chu so ra chu (dung noi bo cho vn_money_to_words). */
+function vn_read_group(int $n, bool $isFirstGroup): string
+{
+    $ones = ['', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+    $hundred = intdiv($n, 100);
+    $ten = intdiv($n % 100, 10);
+    $unit = $n % 10;
+    $parts = [];
+
+    if (!($isFirstGroup && $hundred === 0)) {
+        $parts[] = ($hundred === 0 ? 'không' : $ones[$hundred]) . ' trăm';
+    }
+
+    if ($ten >= 2) {
+        $parts[] = $ones[$ten] . ' mươi';
+        if ($unit === 1) $parts[] = 'mốt';
+        elseif ($unit === 5) $parts[] = 'lăm';
+        elseif ($unit === 4) $parts[] = 'tư';
+        elseif ($unit > 0) $parts[] = $ones[$unit];
+    } elseif ($ten === 1) {
+        $parts[] = 'mười';
+        if ($unit === 1) $parts[] = 'một';
+        elseif ($unit === 5) $parts[] = 'lăm';
+        elseif ($unit > 0) $parts[] = $ones[$unit];
+    } elseif ($unit > 0) {
+        $parts[] = $parts ? 'lẻ ' . $ones[$unit] : $ones[$unit];
+    }
+
+    return trim(implode(' ', $parts));
+}
+
+/** Doc so tien VND ra chu, vd: 4200000 -> "Bốn triệu hai trăm nghìn đồng". */
+function vn_money_to_words(float $amount): string
+{
+    $number = (int)round($amount);
+    if ($number === 0) return 'Không đồng';
+    $neg = $number < 0;
+    $number = abs($number);
+
+    $groupNames = ['', 'nghìn', 'triệu', 'tỷ', 'nghìn tỷ'];
+    $groups = [];
+    $n = $number;
+    while ($n > 0) {
+        $groups[] = $n % 1000;
+        $n = intdiv($n, 1000);
+    }
+
+    $strParts = [];
+    for ($i = count($groups) - 1; $i >= 0; $i--) {
+        $g = $groups[$i];
+        if ($g === 0) continue;
+        $words = vn_read_group($g, empty($strParts));
+        if ($words === '') continue;
+        $suffix = $groupNames[$i] ?? '';
+        $strParts[] = trim($words . ($suffix ? ' ' . $suffix : ''));
+    }
+
+    $result = preg_replace('/\s+/', ' ', trim(implode(' ', $strParts)));
+    $result = mb_strtoupper(mb_substr($result, 0, 1)) . mb_substr($result, 1);
+    return ($neg ? 'Âm ' : '') . $result . ' đồng';
+}
+
 function redirect(string $path): void
 {
     header('Location: ' . BASE_URL . $path);

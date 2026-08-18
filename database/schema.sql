@@ -137,8 +137,11 @@ CREATE TABLE IF NOT EXISTS deal_periods (
     electricity_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     water_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     management_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    internet_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    cleaning_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0, -- Phi ve sinh
+    vehicle_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0, -- Phi xe
     other_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
-    utilities_amount DECIMAL(14,0) NOT NULL DEFAULT 0, -- = dien+nuoc+phi_ql+phi_khac (tu dong tinh lai khi luu)
+    utilities_amount DECIMAL(14,0) NOT NULL DEFAULT 0, -- = tong 7 khoan phi tren (tu dong tinh lai khi luu)
     paid_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     reconciled TINYINT(1) NOT NULL DEFAULT 0,
     note VARCHAR(255) DEFAULT NULL,

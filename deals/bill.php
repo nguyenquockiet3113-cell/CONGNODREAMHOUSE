@@ -26,28 +26,39 @@ $maxIndexStmt = $pdo->prepare('SELECT MAX(period_index) FROM deal_periods WHERE 
 $maxIndexStmt->execute([$dealId]);
 $isLastPeriod = (int)$period['period_index'] === (int)$maxIndexStmt->fetchColumn();
 
-// Xac dinh mau bill theo khu vuc
+// Xac dinh logo/mau theo khu vuc
 $zone = (string)($deal['zone'] ?? '');
 if (stripos($zone, 'Central Park') !== false) {
     $theme = 'central';
-    $zoneLabel = 'VINHOMES CENTRAL PARK';
+    $zoneLogo = 'vinhomes-central-park.png';
 } elseif (stripos($zone, 'Grand Park') !== false) {
     $theme = 'grand';
-    $zoneLabel = 'VINHOMES GRAND PARK';
+    $zoneLogo = 'vinhomes-grand-park.png';
 } else {
     $theme = 'default';
-    $zoneLabel = $zone !== '' ? mb_strtoupper($zone) : 'DREAM\'S HOUSE';
+    $zoneLogo = null;
 }
+$zoneLogoPath = __DIR__ . '/../assets/img/' . ($zoneLogo ?? '');
+$hasZoneLogo = $zoneLogo && file_exists($zoneLogoPath);
 
+$cin = vndate($period['period_start']);
+$cout = vndate($period['period_end']);
+
+// STT | Nội dung | Check in | Check out | Thành Tiền
 $items = [
-    ['label' => 'Tiền phòng', 'amount' => (float)$period['rent_amount']],
-    ['label' => 'Tiền điện', 'amount' => (float)$period['electricity_amount']],
-    ['label' => 'Tiền nước', 'amount' => (float)$period['water_amount']],
-    ['label' => 'Phí quản lý', 'amount' => (float)$period['management_fee_amount']],
-    ['label' => 'Phí khác' . ($period['note'] ? ' (' . $period['note'] . ')' : ''), 'amount' => (float)$period['other_fee_amount']],
+    ['label' => 'Tiền phòng', 'cin' => '', 'cout' => '', 'amount' => (float)$period['rent_amount']],
+    ['label' => 'Tiền điện', 'cin' => $cin, 'cout' => $cout, 'amount' => (float)$period['electricity_amount']],
+    ['label' => 'Tiền nước', 'cin' => $cin, 'cout' => $cout, 'amount' => (float)$period['water_amount']],
+    ['label' => 'Phí quản lý', 'cin' => $cin, 'cout' => $cout, 'amount' => (float)$period['management_fee_amount']],
+    ['label' => 'Phí internet', 'cin' => $cin, 'cout' => $cout, 'amount' => (float)$period['internet_amount']],
+    ['label' => 'Phí vệ sinh', 'cin' => '', 'cout' => '', 'amount' => (float)$period['cleaning_fee_amount']],
+    ['label' => 'Phí xe', 'cin' => '', 'cout' => '', 'amount' => (float)$period['vehicle_fee_amount']],
+    ['label' => 'Phí khác' . ($period['note'] ? ' (' . $period['note'] . ')' : ''), 'cin' => '', 'cout' => '', 'amount' => (float)$period['other_fee_amount']],
 ];
 $subTotal = array_sum(array_column($items, 'amount'));
 $deposit = (float)$deal['deposit_amount'];
+$applyDepositDefault = $isLastPeriod && $deposit > 0;
+$settleDefault = $subTotal - ($applyDepositDefault ? $deposit : 0);
 
 $pageTitle = 'Bill ' . $deal['room_code'];
 ?>
@@ -57,29 +68,31 @@ $pageTitle = 'Bill ' . $deal['room_code'];
 <meta charset="UTF-8">
 <title>Bill <?= e($deal['room_code']) ?> - <?= e(deal_period_label((int)$period['period_index'], $period['period_start'])) ?></title>
 <style>
-  body { font-family: Arial, sans-serif; font-size: 13px; color: #222; max-width: 760px; margin: 0 auto; padding: 20px; }
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #222; max-width: 980px; margin: 0 auto; padding: 20px; }
   .toolbar { text-align: center; margin-bottom: 16px; }
   .toolbar button { font-size: 14px; padding: 8px 20px; cursor: pointer; }
-  .bill-box { border: 1px solid #ccc; border-radius: 6px; overflow: hidden; }
-  .bill-header { display: flex; align-items: center; gap: 16px; padding: 14px 18px; }
-  .theme-central .bill-header { background: #f3e2c7; color: #7a4a1e; }
-  .theme-grand .bill-header { background: #dcefdc; color: #205c2e; }
-  .theme-default .bill-header { background: #e9e9e9; color: #333; }
-  .zone-badge { font-weight: bold; font-size: 16px; letter-spacing: .5px; }
-  .header-info { margin-left: auto; text-align: right; font-size: 13px; }
-  .header-info .room-code { font-size: 18px; font-weight: bold; }
-  table.items { width: 100%; border-collapse: collapse; }
-  table.items th, table.items td { border: 1px solid #ddd; padding: 8px 10px; }
-  table.items th { background: #fafafa; text-align: left; }
+  table.bill { width: 100%; border-collapse: collapse; }
+  table.bill td, table.bill th { border: 1px solid #999; padding: 5px 8px; }
+  .header-logo { text-align: center; vertical-align: middle; }
+  .header-logo img { max-height: 64px; max-width: 100px; }
+  .header-name { font-size: 18px; font-weight: bold; text-align: center; vertical-align: middle; }
+  .header-room { font-size: 16px; font-weight: bold; text-align: center; vertical-align: middle; }
+  .header-note { background: #f4d6d6; font-weight: bold; text-align: center; vertical-align: top; }
+  .theme-central .header-row { background: #f6ddb8; }
+  .theme-grand .header-row { background: #d9ecd3; }
+  .theme-default .header-row { background: #ececec; }
+  .col-head { background: #eba33f; font-weight: bold; text-align: center; }
   .text-end { text-align: right; }
-  .total-row td { font-weight: bold; background: #fafafa; }
-  .settle-box { padding: 14px 18px; }
-  .settle-row { display: flex; justify-content: space-between; padding: 4px 0; }
-  .settle-final { font-size: 16px; font-weight: bold; border-top: 2px solid #333; margin-top: 6px; padding-top: 8px; }
-  .positive { color: #1a7a1a; }
-  .negative { color: #c0392b; }
+  .text-center { text-align: center; }
+  .amount-cell { color: #d32f2f; font-weight: bold; }
+  .deposit-cell { background: #f6ddc0; color: #17348c; font-weight: bold; text-align: right; }
+  .total-label { background: #eac9c6; font-weight: bold; text-align: center; font-size: 15px; }
+  .total-value { background: #ffe600; font-weight: bold; text-align: right; font-size: 15px; }
+  .settle-label { background: #f2c99a; font-weight: bold; text-align: center; font-size: 15px; }
+  .settle-value { background: #5fe0e0; font-weight: bold; text-align: right; font-size: 15px; }
+  .deposit-toggle { font-size: 12px; padding: 6px 8px; }
   @media print {
-    .toolbar { display: none; }
+    .toolbar, .deposit-toggle { display: none; }
     body { padding: 0; max-width: none; }
   }
 </style>
@@ -90,68 +103,84 @@ $pageTitle = 'Bill ' . $deal['room_code'];
     <button onclick="window.close()">Đóng</button>
   </div>
 
-  <div class="bill-box theme-<?= $theme ?>">
-    <div class="bill-header">
-      <img src="<?= url('/assets/img/logo.png') ?>" alt="Logo" style="height:40px;">
-      <div class="zone-badge"><?= e($zoneLabel) ?></div>
-      <div class="header-info">
-        <div class="room-code"><?= e($deal['room_code']) ?></div>
-        <div><?= e($deal['guest_name']) ?></div>
-        <div><?= e(deal_period_label((int)$period['period_index'], $period['period_start'])) ?> — Từ <?= vndate($period['period_start']) ?> đến <?= vndate($period['period_end']) ?></div>
-      </div>
-    </div>
+  <table class="bill theme-<?= $theme ?>">
+    <tr class="header-row">
+      <td class="header-logo">
+        <?php if ($hasZoneLogo): ?>
+          <img src="<?= url('/assets/img/' . $zoneLogo) ?>" alt="Logo">
+        <?php else: ?>
+          <img src="<?= url('/assets/img/logo.png') ?>" alt="Logo">
+        <?php endif; ?>
+      </td>
+      <td class="header-name" colspan="3"><?= e(mb_strtoupper($deal['guest_name'])) ?></td>
+      <td class="header-room" colspan="2"><?= e($deal['room_code']) ?></td>
+      <td colspan="4"></td>
+      <td class="header-note" rowspan="13">Note</td>
+    </tr>
+    <tr class="col-head">
+      <td>STT</td>
+      <td>Nội dung</td>
+      <td>Check in</td>
+      <td>Check out</td>
+      <td>Số lượng</td>
+      <td>Đơn giá</td>
+      <td>Thành Tiền</td>
+      <td>Tiền Cọc</td>
+      <td>Đã Thanh toán</td>
+      <td>Tổng cộng</td>
+    </tr>
+    <?php foreach ($items as $i => $it): ?>
+      <tr>
+        <td class="text-center"><?= $i + 1 ?></td>
+        <td><?= e($it['label']) ?></td>
+        <td class="text-center"><?= e($it['cin']) ?></td>
+        <td class="text-center"><?= e($it['cout']) ?></td>
+        <td class="text-center">1,00</td>
+        <td></td>
+        <td class="text-end amount-cell"><?= number_format($it['amount'], 0, ',', '.') ?></td>
+        <?php if ($i === 0): ?>
+          <td class="deposit-cell" rowspan="8"><?= number_format($deposit, 0, ',', '.') ?></td>
+        <?php endif; ?>
+        <td></td>
+        <td class="text-end amount-cell"><?= number_format($it['amount'], 0, ',', '.') ?></td>
+      </tr>
+    <?php endforeach; ?>
+    <tr>
+      <td class="text-center">9</td>
+      <td>Tiền cọc</td>
+      <td colspan="3"></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td colspan="7" class="total-label">TỔNG CỘNG</td>
+      <td colspan="3" class="total-value" id="subTotalCell"><?= number_format($subTotal, 0, ',', '.') ?></td>
+    </tr>
+    <tr>
+      <td colspan="7" class="settle-label" id="settleLabel">HOÀN LẠI CHO SALE</td>
+      <td colspan="3" class="settle-value" id="settleAmount"><?= number_format(abs($settleDefault), 0, ',', '.') ?></td>
+    </tr>
+  </table>
 
-    <table class="items">
-      <thead>
-        <tr><th style="width:40px;">STT</th><th>Nội dung</th><th class="text-end" style="width:160px;">Số tiền</th></tr>
-      </thead>
-      <tbody>
-        <?php foreach ($items as $i => $it): ?>
-          <tr>
-            <td><?= $i + 1 ?></td>
-            <td><?= e($it['label']) ?></td>
-            <td class="text-end"><?= money($it['amount']) ?></td>
-          </tr>
-        <?php endforeach; ?>
-        <tr class="total-row">
-          <td colspan="2">TỔNG CỘNG</td>
-          <td class="text-end" id="subTotalCell"><?= money($subTotal) ?></td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="settle-box">
-      <label style="display:flex; align-items:center; gap:8px;">
-        <input type="checkbox" id="applyDeposit" <?= $isLastPeriod && $deposit > 0 ? 'checked' : '' ?> <?= $deposit > 0 ? '' : 'disabled' ?>>
-        Trừ tiền cọc đã thu (<?= money($deposit) ?>) vào kỳ này<?= $isLastPeriod ? ' <span style="color:#888;">— kỳ cuối, gợi ý trừ cọc</span>' : '' ?>
-      </label>
-      <div class="settle-row"><span>Tổng cộng chi phí kỳ này</span><span id="lineSubTotal"><?= money($subTotal) ?></span></div>
-      <div class="settle-row"><span>Trừ tiền cọc</span><span id="lineDeposit">- <?= money($isLastPeriod && $deposit > 0 ? $deposit : 0) ?></span></div>
-      <div class="settle-row settle-final">
-        <span id="settleLabel"></span><span id="settleAmount"></span>
-      </div>
-    </div>
-  </div>
+  <label class="deposit-toggle d-print-none" style="display:block; margin-top:10px;">
+    <input type="checkbox" id="applyDeposit" <?= $applyDepositDefault ? 'checked' : '' ?> <?= $deposit > 0 ? '' : 'disabled' ?>>
+    Trừ tiền cọc đã thu (<?= number_format($deposit, 0, ',', '.') ?> đ) vào kỳ này<?= $isLastPeriod ? ' — kỳ cuối, gợi ý trừ cọc' : '' ?>
+  </label>
 
 <script>
 var subTotal = <?= (float)$subTotal ?>;
 var deposit = <?= (float)$deposit ?>;
-function fmt(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(Math.abs(n))) + ' đ'; }
+function fmt(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(Math.abs(n))); }
 function recalcSettle() {
   var applied = document.getElementById('applyDeposit').checked ? deposit : 0;
-  document.getElementById('lineDeposit').textContent = '- ' + fmt(applied);
   var settle = subTotal - applied;
   var labelEl = document.getElementById('settleLabel');
   var amountEl = document.getElementById('settleAmount');
-  if (settle >= 0) {
-    labelEl.textContent = 'THANH TOÁN CHO HOST';
-    amountEl.textContent = fmt(settle);
-    amountEl.className = 'positive';
-  } else {
-    labelEl.textContent = 'HOÀN LẠI CHO SALE';
-    amountEl.textContent = fmt(settle);
-    amountEl.className = 'negative';
-  }
+  labelEl.textContent = settle >= 0 ? 'THANH TOÁN CHO HOST' : 'HOÀN LẠI CHO SALE';
+  amountEl.textContent = fmt(settle);
 }
 document.getElementById('applyDeposit').addEventListener('change', recalcSettle);
 recalcSettle();

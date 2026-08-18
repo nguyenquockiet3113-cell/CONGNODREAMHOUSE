@@ -217,11 +217,13 @@ require_once __DIR__ . '/../includes/header.php';
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
+          <div class="table-responsive">
           <table class="table table-sm mb-0">
             <thead>
               <tr>
                 <th>Kỳ</th><th>Từ - đến</th><th class="text-end">Thuê</th><th class="text-end">Cọc</th>
-                <th class="text-end">Điện</th><th class="text-end">Nước</th><th class="text-end">Phí QL</th><th class="text-end">Phí khác</th>
+                <th class="text-end">Điện</th><th class="text-end">Nước</th><th class="text-end">Phí QL</th>
+                <th class="text-end">Internet</th><th class="text-end">Vệ sinh</th><th class="text-end">Xe</th><th class="text-end">Phí khác</th>
                 <th class="text-end">Tổng cần TT</th><th class="text-end">Đã TT</th><th class="text-end">Còn lại</th><th></th>
               </tr>
             </thead>
@@ -236,6 +238,9 @@ require_once __DIR__ . '/../includes/header.php';
                   <td class="text-end"><?= money($p['electricity_amount'] ?? 0) ?></td>
                   <td class="text-end"><?= money($p['water_amount'] ?? 0) ?></td>
                   <td class="text-end"><?= money($p['management_fee_amount'] ?? 0) ?></td>
+                  <td class="text-end"><?= money($p['internet_amount'] ?? 0) ?></td>
+                  <td class="text-end"><?= money($p['cleaning_fee_amount'] ?? 0) ?></td>
+                  <td class="text-end"><?= money($p['vehicle_fee_amount'] ?? 0) ?></td>
                   <td class="text-end"><?= money($p['other_fee_amount'] ?? 0) ?></td>
                   <td class="text-end fw-semibold"><?= money($pt) ?></td>
                   <td class="text-end text-success"><?= money($p['paid_amount']) ?></td>
@@ -245,6 +250,7 @@ require_once __DIR__ . '/../includes/header.php';
               <?php endforeach; ?>
             </tbody>
           </table>
+          </div>
         </div>
         <div class="modal-footer">
           <a href="<?= url('/deals/form.php?id=' . $d['id']) ?>" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i> Sửa chi tiết từng kỳ</a>
