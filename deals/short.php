@@ -132,6 +132,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <button class="btn btn-sm btn-outline-success" title="Đánh dấu đã thu đủ"><i class="bi bi-cash-coin"></i></button>
                 </form>
               <?php endif; ?>
+              <a href="<?= url('/deals/receipt.php?id=' . $d['id']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary" title="Xem biên nhận"><i class="bi bi-receipt"></i></a>
               <a href="<?= url('/deals/form.php?id=' . $d['id']) ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
               <form method="post" action="<?= url('/deals/delete.php') ?>" class="d-inline" data-confirm="Xóa deal của <?= e($d['guest_name']) ?>?">
                 <?= csrf_field() ?>
