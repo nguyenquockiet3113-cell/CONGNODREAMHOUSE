@@ -3,6 +3,7 @@ require_once __DIR__ . '/../config/config.php';
 require_login();
 
 $zoneFilter = trim($_GET['zone'] ?? '');
+$bedroomsFilter = trim($_GET['bedrooms'] ?? '');
 $search = trim($_GET['q'] ?? '');
 
 $sql = 'SELECT * FROM rooms WHERE 1=1';
@@ -10,6 +11,10 @@ $params = [];
 if ($zoneFilter !== '') {
     $sql .= ' AND zone = ?';
     $params[] = $zoneFilter;
+}
+if ($bedroomsFilter !== '') {
+    $sql .= ' AND bedrooms = ?';
+    $params[] = (int)$bedroomsFilter;
 }
 if ($search !== '') {
     $sql .= ' AND (room_code LIKE ? OR zone LIKE ?)';
@@ -22,6 +27,7 @@ $stmt->execute($params);
 $rooms = $stmt->fetchAll();
 
 $zones = $pdo->query("SELECT DISTINCT zone FROM rooms WHERE zone IS NOT NULL AND zone != '' ORDER BY zone")->fetchAll(PDO::FETCH_COLUMN);
+$bedroomOptions = $pdo->query('SELECT DISTINCT bedrooms FROM rooms WHERE bedrooms IS NOT NULL ORDER BY bedrooms')->fetchAll(PDO::FETCH_COLUMN);
 
 // Phong dang co khach o (theo deal co checkin <= hom nay < checkout)
 $today = date('Y-m-d');
@@ -48,12 +54,21 @@ require_once __DIR__ . '/../includes/header.php';
         <label class="form-label small mb-1">Tìm kiếm</label>
         <input type="text" name="q" class="form-control" placeholder="Mã phòng, khu vực..." value="<?= e($search) ?>">
       </div>
-      <div class="col-sm-4">
+      <div class="col-sm-3">
         <label class="form-label small mb-1">Khu vực</label>
         <select name="zone" class="form-select">
           <option value="">-- Tất cả khu vực --</option>
           <?php foreach ($zones as $z): ?>
             <option value="<?= e($z) ?>" <?= $zoneFilter === $z ? 'selected' : '' ?>><?= e($z) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="col-sm-2">
+        <label class="form-label small mb-1">Số PN</label>
+        <select name="bedrooms" class="form-select">
+          <option value="">-- Tất cả --</option>
+          <?php foreach ($bedroomOptions as $b): ?>
+            <option value="<?= (int)$b ?>" <?= $bedroomsFilter === (string)$b ? 'selected' : '' ?>><?= (int)$b ?> PN</option>
           <?php endforeach; ?>
         </select>
       </div>

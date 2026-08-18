@@ -106,8 +106,8 @@ const CONTRACT_STATUS_LABELS = [
 ];
 
 const EXPENSE_CATEGORIES = [
-    'Điện', 'Nước', 'Phí quản lý', 'Phí thẻ/ngân hàng', 'Internet',
-    'Thuế - Mặt bằng', 'Lương', 'Sửa chữa', 'Rác', 'Vật tư', 'Khác',
+    'Điện', 'Nước + Phí quản lý', 'Thẻ xe', 'Phí thẻ/ngân hàng', 'Internet',
+    'Thuế - Mặt bằng', 'Lương', 'Sửa chữa', 'Rác', 'Vật tư', 'Phát sinh khác',
 ];
 
 /** Ghi 1 dong CSV, tuong thich PHP 8.4+ (bat buoc truyen $escape de tranh canh bao deprecated). */
