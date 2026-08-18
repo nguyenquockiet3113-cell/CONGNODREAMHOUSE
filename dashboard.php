@@ -284,7 +284,7 @@ new Chart(document.getElementById('revenueChart'), {
   data: {
     labels: <?= json_encode($months) ?>,
     datasets: [
-      { label: 'Doanh thu', data: <?= json_encode($chartRevenue) ?>, backgroundColor: '#2f6f4f' },
+      { label: 'Doanh thu', data: <?= json_encode($chartRevenue) ?>, backgroundColor: '#f4511e' },
       { label: 'Chi phí', data: <?= json_encode($chartExpense) ?>, backgroundColor: '#dc2626' },
     ]
   },

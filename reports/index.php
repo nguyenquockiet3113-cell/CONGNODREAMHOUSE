@@ -131,7 +131,7 @@ new Chart(document.getElementById('trendChart'), {
   data: {
     labels: <?= json_encode($months) ?>,
     datasets: [
-      { type: 'bar', label: 'Doanh thu', data: <?= json_encode(array_map(fn($r) => $r['lt'] + $r['st'], $rows)) ?>, backgroundColor: '#2f6f4f' },
+      { type: 'bar', label: 'Doanh thu', data: <?= json_encode(array_map(fn($r) => $r['lt'] + $r['st'], $rows)) ?>, backgroundColor: '#f4511e' },
       { type: 'bar', label: 'Chi phí', data: <?= json_encode(array_column($rows, 'expense')) ?>, backgroundColor: '#dc2626' },
       { type: 'line', label: 'Lợi nhuận', data: <?= json_encode(array_column($rows, 'profit')) ?>, borderColor: '#2563eb', backgroundColor: '#2563eb', tension: .3 },
     ]
@@ -149,7 +149,7 @@ new Chart(document.getElementById('catChart'), {
     labels: <?= json_encode(array_column($categoryBreakdown, 'category')) ?>,
     datasets: [{
       data: <?= json_encode(array_map(fn($c) => (float)$c['s'], $categoryBreakdown)) ?>,
-      backgroundColor: ['#2f6f4f','#2563eb','#dc2626','#f59e0b','#8b5cf6','#0891b2','#db2777','#65a30d','#71717a'],
+      backgroundColor: ['#f4511e','#2563eb','#dc2626','#ffc107','#8b5cf6','#0891b2','#db2777','#65a30d','#71717a'],
     }]
   },
   options: { responsive: true, plugins: { legend: { position: 'bottom' } } }

@@ -1,7 +1,9 @@
 :root {
   --sidebar-w: 240px;
-  --brand: #2f6f4f;
-  --brand-dark: #1f4d36;
+  --brand: #ff9f45;
+  --brand-dark: #f4511e;
+  --brand-accent: #ffc107;
+  --brand-accent-dark: #e6a800;
 }
 
 * { box-sizing: border-box; }
@@ -16,7 +18,7 @@ body {
 
 .sidebar {
   width: var(--sidebar-w);
-  background: linear-gradient(180deg, var(--brand-dark), var(--brand));
+  background: linear-gradient(180deg, var(--brand-dark), var(--brand) 55%, var(--brand-accent));
   color: #fff;
   position: fixed;
   top: 0; bottom: 0; left: 0;
@@ -83,7 +85,33 @@ body {
   padding: 18px 20px;
   box-shadow: 0 1px 3px rgba(0,0,0,.06);
   border: 1px solid #eef0f2;
+  border-top: 3px solid var(--brand-accent);
   height: 100%;
+}
+
+/* Nut hanh dong chinh (Them/Luu) dung mau thuong hieu cam-vang cho bat mat */
+.btn-success {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--brand-dark);
+  --bs-btn-border-color: var(--brand-dark);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #d8430f;
+  --bs-btn-hover-border-color: #d8430f;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #d8430f;
+  --bs-btn-active-border-color: #d8430f;
+  --bs-btn-disabled-bg: var(--brand);
+  --bs-btn-disabled-border-color: var(--brand);
+}
+.btn-outline-success {
+  --bs-btn-color: var(--brand-dark);
+  --bs-btn-border-color: var(--brand-dark);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--brand-dark);
+  --bs-btn-hover-border-color: var(--brand-dark);
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--brand-dark);
+  --bs-btn-active-border-color: var(--brand-dark);
 }
 
 .stat-card .stat-icon {
@@ -113,7 +141,7 @@ table.table thead { background: #f8f9fa; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--brand-dark), var(--brand));
+  background: linear-gradient(135deg, var(--brand-dark), var(--brand) 55%, var(--brand-accent));
 }
 
 .calendar-table th, .calendar-table td { padding: 4px; }
