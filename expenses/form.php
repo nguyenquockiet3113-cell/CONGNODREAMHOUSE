@@ -71,7 +71,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
         <div class="col-md-3">
           <label class="form-label">Danh mục *</label>
-          <select name="category" class="form-select" required>
+          <select name="category" id="expCategorySelect" class="form-select" required>
             <?php foreach (EXPENSE_CATEGORIES as $cat): ?>
               <option value="<?= e($cat) ?>" <?= $expense['category'] === $cat ? 'selected' : '' ?>><?= e($cat) ?></option>
             <?php endforeach; ?>
@@ -79,12 +79,13 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
         <div class="col-md-3">
           <label class="form-label">Phòng liên quan (nếu có)</label>
-          <select name="room_id" class="form-select">
+          <select name="room_id" id="expRoomSelect" class="form-select">
             <option value="">-- Chung / không xác định --</option>
             <?php foreach ($rooms as $r): ?>
               <option value="<?= $r['id'] ?>" <?= (int)$expense['room_id'] === (int)$r['id'] ? 'selected' : '' ?>><?= e($r['room_code']) ?></option>
             <?php endforeach; ?>
           </select>
+          <div id="expRoomCodeHint" class="form-text"></div>
         </div>
         <div class="col-md-3">
           <label class="form-label">Số tiền (đ) *</label>
@@ -111,4 +112,28 @@ require_once __DIR__ . '/../includes/header.php';
     </form>
   </div>
 </div>
+
+<script>
+var expRoomCodes = <?= json_encode(array_column($rooms, null, 'id')) ?>;
+var expRoomSelect = document.getElementById('expRoomSelect');
+var expCategorySelect = document.getElementById('expCategorySelect');
+var expRoomCodeHint = document.getElementById('expRoomCodeHint');
+function expUpdateCodeHint() {
+  var room = expRoomCodes[expRoomSelect.value];
+  if (!room) { expRoomCodeHint.textContent = ''; return; }
+  var cat = expCategorySelect.value;
+  if (cat === 'Điện') {
+    expRoomCodeHint.textContent = room.electricity_code ? 'Mã điện (PE): ' + room.electricity_code : 'Phòng này chưa có mã điện.';
+  } else if (cat.indexOf('Nước') === 0) {
+    expRoomCodeHint.textContent = room.water_code ? 'Mã nước: ' + room.water_code : 'Phòng này chưa có mã nước.';
+  } else {
+    expRoomCodeHint.textContent = '';
+  }
+}
+if (expRoomSelect && expCategorySelect) {
+  expRoomSelect.addEventListener('change', expUpdateCodeHint);
+  expCategorySelect.addEventListener('change', expUpdateCodeHint);
+  expUpdateCodeHint();
+}
+</script>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

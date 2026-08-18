@@ -30,7 +30,10 @@ require_once __DIR__ . '/../includes/header.php';
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <h4 class="mb-0"><i class="bi bi-cash-coin"></i> Chi phí</h4>
-  <a href="<?= url('/expenses/form.php') ?>" class="btn btn-success"><i class="bi bi-plus-lg"></i> Thêm chi phí</a>
+  <div class="d-flex gap-2">
+    <a href="<?= url('/expenses/room_codes.php') ?>" class="btn btn-outline-secondary"><i class="bi bi-lightning-charge"></i> Mã điện &amp; nước theo phòng</a>
+    <a href="<?= url('/expenses/form.php') ?>" class="btn btn-success"><i class="bi bi-plus-lg"></i> Thêm chi phí</a>
+  </div>
 </div>
 
 <div class="row g-3 mb-3">

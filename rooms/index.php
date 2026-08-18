@@ -156,7 +156,7 @@ foreach ($rooms as $r) {
           <tr>
             <th>Mã phòng</th>
             <th>Số phòng ngủ</th>
-            <th>Mã dịch vụ (Điện/Nước/Net)</th>
+            <th>Mã dịch vụ (Điện/Nước/Net) <a href="<?= url('/expenses/room_codes.php') ?>" class="small" title="Sửa mã điện/nước tại Chi phí"><i class="bi bi-pencil-square"></i></a></th>
             <th>Tình trạng</th>
             <th class="text-end">Thao tác</th>
           </tr>
