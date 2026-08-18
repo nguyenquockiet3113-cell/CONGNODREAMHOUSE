@@ -10,6 +10,7 @@ $deal = [
     'price_per_unit' => 0, 'deposit_amount' => 0, 'deposit_date' => '', 'extra_fee' => 0,
     'payment_method' => 'chuyen_khoan', 'receiving_account' => '', 'paid_amount' => 0,
     'payment_status' => 'unpaid', 'apply_vat' => 0, 'vat_percent' => 0, 'status' => 'active', 'note' => '',
+    'issue_invoice' => 0, 'invoice_declared_price' => null,
 ];
 $periods = [];
 $payments = [];
@@ -57,6 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $deal['receiving_account'] = trim($_POST['receiving_account'] ?? '');
     $deal['status'] = in_array($_POST['status'] ?? '', array_keys(DEAL_STATUS_LABELS), true) ? $_POST['status'] : 'active';
     $deal['note'] = trim($_POST['note'] ?? '');
+    $deal['issue_invoice'] = !empty($_POST['issue_invoice']) ? 1 : 0;
+    $deal['invoice_declared_price'] = ($_POST['invoice_declared_price'] ?? '') !== '' ? (float)$_POST['invoice_declared_price'] : null;
 
     if ($deal['room_code'] === '') $errors[] = 'Vui lòng nhập mã phòng.';
     if ($deal['guest_name'] === '') $errors[] = 'Vui lòng nhập tên khách/sale.';
@@ -83,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'room_code', 'bedrooms', 'zone', 'guest_name', 'checkin_date', 'checkout_date',
             'nights', 'deal_type', 'price_per_unit', 'deposit_amount', 'deposit_date', 'extra_fee',
             'total_amount', 'payment_method', 'receiving_account', 'apply_vat', 'vat_percent', 'status', 'note',
+            'issue_invoice', 'invoice_declared_price',
         ];
         $values = [
             $deal['room_code'], $deal['bedrooms'], $deal['zone'], $deal['guest_name'],
@@ -90,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deal['price_per_unit'], $deal['deposit_amount'], $deal['deposit_date'], $deal['extra_fee'],
             $total, $deal['payment_method'], $deal['receiving_account'],
             (int)!empty($deal['apply_vat']), (float)($deal['vat_percent'] ?? 0), $deal['status'] ?? 'active', $deal['note'],
+            $deal['issue_invoice'], $deal['invoice_declared_price'],
         ];
 
         if ($id) {
@@ -254,7 +259,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div class="mt-2">
         <a href="#advancedFields" data-bs-toggle="collapse" class="small"><i class="bi bi-chevron-down"></i> Thêm chi tiết thanh toán (cọc, hình thức, tài khoản nhận)</a>
-        <div class="collapse<?= ($deal['deposit_amount'] || $deal['deposit_date'] || $deal['receiving_account']) ? ' show' : '' ?> mt-2" id="advancedFields">
+        <div class="collapse<?= ($deal['deposit_amount'] || $deal['deposit_date'] || $deal['receiving_account'] || $deal['issue_invoice']) ? ' show' : '' ?> mt-2" id="advancedFields">
           <div class="row g-3">
             <div class="col-md-3">
               <label class="form-label">Tiền cọc (đ)</label>
@@ -288,6 +293,24 @@ require_once __DIR__ . '/../includes/header.php';
               </select>
               <div class="form-text"><a href="<?= url('/bank_accounts/index.php') ?>" target="_blank">+ Quản lý danh sách tài khoản nhận</a></div>
             </div>
+          </div>
+
+          <div class="row g-3 mt-1">
+            <div class="col-md-3 d-flex align-items-end">
+              <div class="form-check">
+                <input type="checkbox" name="issue_invoice" id="issue_invoice" class="form-check-input" value="1" <?= !empty($deal['issue_invoice']) ? 'checked' : '' ?>>
+                <label class="form-check-label" for="issue_invoice">Xuất hóa đơn (VAT)</label>
+              </div>
+            </div>
+            <div class="col-md-3" id="invoiceDeclaredPriceWrap" style="<?= empty($deal['issue_invoice']) ? 'display:none;' : '' ?>">
+              <label class="form-label">Giá kê khai /đêm (đ)</label>
+              <input type="number" step="1000" name="invoice_declared_price" class="form-control" value="<?= e($deal['invoice_declared_price']) ?>">
+            </div>
+            <?php if ($id): ?>
+              <div class="col-md-3 d-flex align-items-end">
+                <a href="<?= url('/deals/invoice_calc.php?id=' . $id) ?>" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="bi bi-receipt-cutoff"></i> Xem bảng kê xuất hóa đơn</a>
+              </div>
+            <?php endif; ?>
           </div>
         </div>
       </div>
@@ -553,6 +576,14 @@ if (meterTableBody) {
   meterTableBody.addEventListener('input', function (e) {
     var row = e.target.closest('.meter-row');
     if (row) recalcMeterRow(row);
+  });
+}
+
+var issueInvoiceCb = document.getElementById('issue_invoice');
+var invoiceDeclaredPriceWrap = document.getElementById('invoiceDeclaredPriceWrap');
+if (issueInvoiceCb && invoiceDeclaredPriceWrap) {
+  issueInvoiceCb.addEventListener('change', function () {
+    invoiceDeclaredPriceWrap.style.display = this.checked ? '' : 'none';
   });
 }
 
