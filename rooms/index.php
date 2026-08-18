@@ -6,7 +6,8 @@ $zoneFilter = trim($_GET['zone'] ?? '');
 $bedroomsFilter = trim($_GET['bedrooms'] ?? '');
 $search = trim($_GET['q'] ?? '');
 $availFilter = trim($_GET['avail'] ?? '');
-$sortOrder = trim($_GET['sort'] ?? 'az') === 'za' ? 'za' : 'az';
+$sortOptions = ['az', 'za', 'bedrooms_asc', 'bedrooms_desc'];
+$sortOrder = in_array(trim($_GET['sort'] ?? 'az'), $sortOptions, true) ? trim($_GET['sort']) : 'az';
 $today = date('Y-m-d');
 $fromDate = trim($_GET['from'] ?? '') ?: $today;
 $toDate = trim($_GET['to'] ?? '') ?: $fromDate;
@@ -38,7 +39,19 @@ if ($search !== '') {
     $params[] = "%$search%";
     $params[] = "%$search%";
 }
-$sql .= ' ORDER BY zone ASC, room_code ' . ($sortOrder === 'za' ? 'DESC' : 'ASC');
+switch ($sortOrder) {
+    case 'za':
+        $sql .= ' ORDER BY zone ASC, room_code DESC';
+        break;
+    case 'bedrooms_asc':
+        $sql .= ' ORDER BY zone ASC, bedrooms ASC, room_code ASC';
+        break;
+    case 'bedrooms_desc':
+        $sql .= ' ORDER BY zone ASC, bedrooms DESC, room_code ASC';
+        break;
+    default:
+        $sql .= ' ORDER BY zone ASC, room_code ASC';
+}
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $allRooms = $stmt->fetchAll();
@@ -124,10 +137,12 @@ require_once __DIR__ . '/../includes/header.php';
         </select>
       </div>
       <div class="col-sm-2">
-        <label class="form-label small mb-1">Sắp xếp mã phòng</label>
+        <label class="form-label small mb-1">Sắp xếp</label>
         <select name="sort" class="form-select">
-          <option value="az" <?= $sortOrder === 'az' ? 'selected' : '' ?>>A - Z</option>
-          <option value="za" <?= $sortOrder === 'za' ? 'selected' : '' ?>>Z - A</option>
+          <option value="az" <?= $sortOrder === 'az' ? 'selected' : '' ?>>Mã phòng A - Z</option>
+          <option value="za" <?= $sortOrder === 'za' ? 'selected' : '' ?>>Mã phòng Z - A</option>
+          <option value="bedrooms_asc" <?= $sortOrder === 'bedrooms_asc' ? 'selected' : '' ?>>Số PN tăng dần</option>
+          <option value="bedrooms_desc" <?= $sortOrder === 'bedrooms_desc' ? 'selected' : '' ?>>Số PN giảm dần</option>
         </select>
       </div>
       <div class="col-sm-2">

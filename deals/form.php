@@ -757,6 +757,23 @@ function recalc() {
 });
 document.getElementById('issue_invoice').addEventListener('change', recalc);
 recalc();
+
+// Di chuyen giua cac o bang phim mui ten len/xuong (nhu spreadsheet), khong dung trai/phai
+// de khong pha vi tri con tro khi go trong o text/number/date.
+var navFields = Array.from(document.querySelectorAll(
+  '#dealForm input[type="text"]:not([disabled]), #dealForm input[type="number"]:not([disabled]), #dealForm input[type="date"]:not([disabled])'
+));
+navFields.forEach(function (field, idx) {
+  field.addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    var next = e.key === 'ArrowDown' ? navFields[idx + 1] : navFields[idx - 1];
+    if (next) {
+      e.preventDefault();
+      next.focus();
+      if (typeof next.select === 'function') next.select();
+    }
+  });
+});
 </script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

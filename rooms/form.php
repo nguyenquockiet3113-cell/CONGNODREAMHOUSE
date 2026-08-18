@@ -3,7 +3,7 @@ require_once __DIR__ . '/../config/config.php';
 require_login();
 
 $id = (int)($_GET['id'] ?? 0);
-$room = ['id' => 0, 'room_code' => '', 'zone' => '', 'bedrooms' => 1, 'electricity_code' => '', 'water_code' => '', 'internet_code' => ''];
+$room = ['id' => 0, 'room_code' => '', 'zone' => '', 'bedrooms' => 1];
 // Ma dien/nuoc duoc quan ly rieng tai Chi phi (xem expenses/room_codes.php), khong sua o day.
 $errors = [];
 
@@ -25,7 +25,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $room['room_code'] = trim($_POST['room_code'] ?? '');
     $room['zone'] = trim($_POST['zone'] ?? '');
     $room['bedrooms'] = (int)($_POST['bedrooms'] ?? 1);
-    $room['internet_code'] = trim($_POST['internet_code'] ?? '');
 
     if ($room['room_code'] === '') {
         $errors[] = 'Vui lòng nhập mã phòng.';
@@ -42,12 +41,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$errors) {
         $now = date('Y-m-d H:i:s');
         if ($id) {
-            $stmt = $pdo->prepare('UPDATE rooms SET room_code=?, zone=?, bedrooms=?, internet_code=?, updated_at=? WHERE id=?');
-            $stmt->execute([$room['room_code'], $room['zone'], $room['bedrooms'], $room['internet_code'], $now, $id]);
+            $stmt = $pdo->prepare('UPDATE rooms SET room_code=?, zone=?, bedrooms=?, updated_at=? WHERE id=?');
+            $stmt->execute([$room['room_code'], $room['zone'], $room['bedrooms'], $now, $id]);
             flash('success', 'Đã cập nhật phòng.');
         } else {
-            $stmt = $pdo->prepare('INSERT INTO rooms (room_code, zone, bedrooms, internet_code, created_at, updated_at) VALUES (?,?,?,?,?,?)');
-            $stmt->execute([$room['room_code'], $room['zone'], $room['bedrooms'], $room['internet_code'], $now, $now]);
+            $stmt = $pdo->prepare('INSERT INTO rooms (room_code, zone, bedrooms, created_at, updated_at) VALUES (?,?,?,?,?)');
+            $stmt->execute([$room['room_code'], $room['zone'], $room['bedrooms'], $now, $now]);
             flash('success', 'Đã thêm phòng mới.');
         }
         redirect('/rooms/index.php');
@@ -85,14 +84,6 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
       </div>
 
-      <hr>
-      <div class="fw-semibold mb-2">Mã dịch vụ</div>
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label">Mã Internet</label>
-          <input type="text" name="internet_code" class="form-control" value="<?= e($room['internet_code']) ?>">
-        </div>
-      </div>
       <?php if ($id): ?>
         <div class="form-text mt-2">Mã điện / mã nước của phòng này được quản lý tại <a href="<?= url('/expenses/room_codes.php') ?>">Chi phí &raquo; Mã điện &amp; nước theo phòng</a>.</div>
       <?php endif; ?>
