@@ -1,7 +1,7 @@
 <?php
 /** Danh sach bang du lieu duoc phep dong bo voi Google Sheets */
 const SYNC_TABLES = [
-    'rooms', 'contracts', 'deals', 'deal_periods', 'deal_payments',
+    'rooms', 'contracts', 'deals', 'deal_periods', 'deal_payments', 'billing_entries',
     'expenses', 'cleaning_price_list', 'cleaning_staff', 'cleaning_logs', 'funds', 'fund_ledger', 'reminders', 'bank_accounts',
 ];
 

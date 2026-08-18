@@ -122,6 +122,31 @@ CREATE TABLE IF NOT EXISTS deal_periods (
     FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS billing_entries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bill_date DATE NOT NULL,
+    guest_name VARCHAR(150) NOT NULL,
+    room_code VARCHAR(50),
+    content VARCHAR(255),
+    quantity DECIMAL(10,2) NOT NULL DEFAULT 1,
+    electricity_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    water_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    management_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    internet_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    vehicle_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    other_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    card_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    total_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    deposit_used DECIMAL(14,0) NOT NULL DEFAULT 0,
+    settle_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    is_done TINYINT NOT NULL DEFAULT 0,
+    customer_paid_date DATE,
+    receiving_account VARCHAR(100),
+    note VARCHAR(255),
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS deal_payments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     deal_id INTEGER NOT NULL,

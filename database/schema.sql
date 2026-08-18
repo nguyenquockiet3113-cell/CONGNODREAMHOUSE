@@ -146,6 +146,36 @@ CREATE TABLE IF NOT EXISTS deal_periods (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
+-- So giao dich phat sinh dai han (tu do, khong rang buoc vao 1 deal cu the)
+-- Giong so tay "TINH TIEN DAI HAN": moi dong la 1 khoan thu bat ky
+-- (dien nuoc thang, phi lam the, mat the, tien nha...) cho 1 khach/phong.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS billing_entries (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    bill_date DATE NOT NULL,
+    guest_name VARCHAR(150) NOT NULL,
+    room_code VARCHAR(50),
+    content VARCHAR(255),
+    quantity DECIMAL(10,2) NOT NULL DEFAULT 1,
+    electricity_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    water_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    management_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    internet_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    vehicle_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    other_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    card_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0, -- The nha, co the am
+    total_amount DECIMAL(14,0) NOT NULL DEFAULT 0, -- tong 7 khoan tren
+    deposit_used DECIMAL(14,0) NOT NULL DEFAULT 0, -- Tien coc tru vao giao dich nay
+    settle_amount DECIMAL(14,0) NOT NULL DEFAULT 0, -- total_amount - deposit_used, co the am (hoan lai)
+    is_done TINYINT(1) NOT NULL DEFAULT 0, -- Tinh trang
+    customer_paid_date DATE DEFAULT NULL, -- Khach TT
+    receiving_account VARCHAR(100) DEFAULT NULL, -- TK NHAN
+    note VARCHAR(255) DEFAULT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
 -- Lich su thanh toan cua Deal ngan han (ho tro thanh toan nhieu lan)
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS deal_payments (
