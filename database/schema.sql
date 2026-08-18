@@ -28,6 +28,9 @@ CREATE TABLE IF NOT EXISTS rooms (
     room_code VARCHAR(50) NOT NULL UNIQUE,
     zone VARCHAR(150) DEFAULT NULL, -- Khu vuc, vd: Vinhomes Central Park
     bedrooms INT NOT NULL DEFAULT 1,
+    electricity_code VARCHAR(50) DEFAULT NULL, -- Ma dien (PE)
+    water_code VARCHAR(50) DEFAULT NULL, -- Ma nuoc
+    internet_code VARCHAR(50) DEFAULT NULL, -- Ma internet
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -136,7 +139,13 @@ CREATE TABLE IF NOT EXISTS deal_periods (
     rent_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     deposit_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     electricity_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    electricity_old_reading DECIMAL(14,2) DEFAULT NULL,
+    electricity_new_reading DECIMAL(14,2) DEFAULT NULL,
+    electricity_unit_price DECIMAL(14,0) DEFAULT NULL,
     water_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    water_old_reading DECIMAL(14,2) DEFAULT NULL,
+    water_new_reading DECIMAL(14,2) DEFAULT NULL,
+    water_unit_price DECIMAL(14,0) DEFAULT NULL,
     management_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     internet_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     cleaning_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0, -- Phi ve sinh

@@ -112,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!in_array($key, $selfPaid, true)) $utilitiesAmount += $amt;
                 }
                 $pdo->prepare(
-                    'UPDATE deal_periods SET rent_amount=?, deposit_amount=?, electricity_amount=?, water_amount=?, management_fee_amount=?, internet_amount=?, cleaning_fee_amount=?, vehicle_fee_amount=?, other_fee_amount=?, utilities_amount=?, self_paid_items=?, paid_amount=?, note=? WHERE id=? AND deal_id=?'
+                    'UPDATE deal_periods SET rent_amount=?, deposit_amount=?, electricity_amount=?, water_amount=?, management_fee_amount=?, internet_amount=?, cleaning_fee_amount=?, vehicle_fee_amount=?, other_fee_amount=?, utilities_amount=?, self_paid_items=?, paid_amount=?, note=?, electricity_old_reading=?, electricity_new_reading=?, electricity_unit_price=?, water_old_reading=?, water_new_reading=?, water_unit_price=? WHERE id=? AND deal_id=?'
                 )->execute([
                     (float)($_POST['period_rent'][$i] ?? 0),
                     (float)($_POST['period_deposit'][$i] ?? 0),
@@ -121,6 +121,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $utilitiesAmount, implode(',', $selfPaid),
                     (float)($_POST['period_paid'][$i] ?? 0),
                     trim($_POST['period_note'][$i] ?? ''),
+                    ($_POST['period_elec_old'][$i] ?? '') !== '' ? (float)$_POST['period_elec_old'][$i] : null,
+                    ($_POST['period_elec_new'][$i] ?? '') !== '' ? (float)$_POST['period_elec_new'][$i] : null,
+                    ($_POST['period_elec_price'][$i] ?? '') !== '' ? (float)$_POST['period_elec_price'][$i] : null,
+                    ($_POST['period_water_old'][$i] ?? '') !== '' ? (float)$_POST['period_water_old'][$i] : null,
+                    ($_POST['period_water_new'][$i] ?? '') !== '' ? (float)$_POST['period_water_new'][$i] : null,
+                    ($_POST['period_water_price'][$i] ?? '') !== '' ? (float)$_POST['period_water_price'][$i] : null,
                     (int)$pid, $id,
                 ]);
             }
@@ -340,7 +346,7 @@ require_once __DIR__ . '/../includes/header.php';
                   ?>
                   <?php foreach (DEAL_FEE_KEYS as $feeKey => $postField): ?>
                     <td>
-                      <input type="number" step="1000" name="<?= e($postField) ?>[]" class="form-control form-control-sm p-fee <?= in_array($feeKey, $selfPaidSet, true) ? 'p-fee-selfpaid' : '' ?>" value="<?= e($p[$periodDbCols[$feeKey]] ?? 0) ?>">
+                      <input type="number" step="1000" name="<?= e($postField) ?>[]" data-feekey="<?= e($feeKey) ?>" class="form-control form-control-sm p-fee <?= in_array($feeKey, $selfPaidSet, true) ? 'p-fee-selfpaid' : '' ?>" value="<?= e($p[$periodDbCols[$feeKey]] ?? 0) ?>">
                       <label class="small text-muted d-block mt-1 mb-0" style="white-space:nowrap;">
                         <input type="checkbox" name="period_selfpaid_<?= e($feeKey) ?>[<?= $i ?>]" class="form-check-input p-selfpaid" <?= in_array($feeKey, $selfPaidSet, true) ? 'checked' : '' ?>> KH tự đóng
                       </label>
@@ -356,6 +362,39 @@ require_once __DIR__ . '/../includes/header.php';
             </tbody>
           </table>
         </div>
+
+        <?php if (stripos($deal['zone'] ?? '', 'Grand Park') !== false): ?>
+        <div class="fw-semibold mb-2 mt-3">Chỉ số điện &amp; nước theo kỳ (Vinhomes Grand Park)</div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle" id="meterTable">
+            <thead>
+              <tr>
+                <th style="min-width:150px;">Kỳ</th>
+                <th style="width:100px;">Điện - Cũ</th>
+                <th style="width:100px;">Điện - Mới</th>
+                <th style="width:110px;">Đơn giá (đ/kWh)</th>
+                <th style="width:100px;">Nước - Cũ</th>
+                <th style="width:100px;">Nước - Mới</th>
+                <th style="width:110px;">Đơn giá (đ/m³)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($periods as $i => $p): ?>
+                <tr class="meter-row" data-row-index="<?= $i ?>">
+                  <td class="small text-muted"><?= e(deal_period_label($p['period_index'], $p['period_start'])) ?></td>
+                  <td><input type="number" step="0.01" name="period_elec_old[]" class="form-control form-control-sm m-elec-old" value="<?= e($p['electricity_old_reading'] ?? '') ?>"></td>
+                  <td><input type="number" step="0.01" name="period_elec_new[]" class="form-control form-control-sm m-elec-new" value="<?= e($p['electricity_new_reading'] ?? '') ?>"></td>
+                  <td><input type="number" step="100" name="period_elec_price[]" class="form-control form-control-sm m-elec-price" value="<?= e($p['electricity_unit_price'] ?? '') ?>"></td>
+                  <td><input type="number" step="0.01" name="period_water_old[]" class="form-control form-control-sm m-water-old" value="<?= e($p['water_old_reading'] ?? '') ?>"></td>
+                  <td><input type="number" step="0.01" name="period_water_new[]" class="form-control form-control-sm m-water-new" value="<?= e($p['water_new_reading'] ?? '') ?>"></td>
+                  <td><input type="number" step="100" name="period_water_price[]" class="form-control form-control-sm m-water-price" value="<?= e($p['water_unit_price'] ?? '') ?>"></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+          <div class="form-text">Nhập chỉ số cũ/mới và đơn giá để hệ thống tự tính lại cột Điện/Nước ở bảng trên. Để trống nếu muốn tự nhập số tiền trực tiếp.</div>
+        </div>
+        <?php endif; ?>
       <?php elseif ($id && $typePreview === 'dai_han'): ?>
         <hr>
         <div class="alert alert-info small mb-0">Lưu lại để hệ thống tự sinh các kỳ thanh toán 30 ngày cho deal dài hạn này.</div>
@@ -484,6 +523,36 @@ if (periodsTableBody) {
     var row = e.target.closest('.period-row');
     if (row) recalcPeriodRow(row);
     if (typeof recalc === 'function') recalc();
+  });
+}
+
+var meterTableBody = document.querySelector('#meterTable tbody');
+function recalcMeterRow(row) {
+  var idx = parseInt(row.dataset.rowIndex, 10);
+  var periodRow = periodsTableBody ? periodsTableBody.children[idx] : null;
+  if (!periodRow) return;
+  var val = function (cls) { var el = row.querySelector('.' + cls); return el && el.value !== '' ? parseFloat(el.value) : null; };
+  var elecOld = val('m-elec-old'), elecNew = val('m-elec-new'), elecPrice = val('m-elec-price');
+  if (elecOld !== null && elecNew !== null && elecPrice !== null) {
+    var elecInput = periodRow.querySelector('.p-fee[data-feekey="electricity"]');
+    if (elecInput) {
+      elecInput.value = Math.max(0, Math.round((elecNew - elecOld) * elecPrice));
+      elecInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+  var waterOld = val('m-water-old'), waterNew = val('m-water-new'), waterPrice = val('m-water-price');
+  if (waterOld !== null && waterNew !== null && waterPrice !== null) {
+    var waterInput = periodRow.querySelector('.p-fee[data-feekey="water"]');
+    if (waterInput) {
+      waterInput.value = Math.max(0, Math.round((waterNew - waterOld) * waterPrice));
+      waterInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+}
+if (meterTableBody) {
+  meterTableBody.addEventListener('input', function (e) {
+    var row = e.target.closest('.meter-row');
+    if (row) recalcMeterRow(row);
   });
 }
 

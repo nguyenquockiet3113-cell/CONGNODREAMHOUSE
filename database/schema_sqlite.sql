@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS rooms (
     room_code VARCHAR(50) NOT NULL UNIQUE,
     zone VARCHAR(150),
     bedrooms INTEGER NOT NULL DEFAULT 1,
+    electricity_code VARCHAR(50),
+    water_code VARCHAR(50),
+    internet_code VARCHAR(50),
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL
 );
@@ -113,7 +116,13 @@ CREATE TABLE IF NOT EXISTS deal_periods (
     rent_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     deposit_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     electricity_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    electricity_old_reading DECIMAL(14,2),
+    electricity_new_reading DECIMAL(14,2),
+    electricity_unit_price DECIMAL(14,0),
     water_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    water_old_reading DECIMAL(14,2),
+    water_new_reading DECIMAL(14,2),
+    water_unit_price DECIMAL(14,0),
     management_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     internet_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     cleaning_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0,

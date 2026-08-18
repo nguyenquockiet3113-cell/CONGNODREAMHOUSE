@@ -156,6 +156,7 @@ foreach ($rooms as $r) {
           <tr>
             <th>Mã phòng</th>
             <th>Số phòng ngủ</th>
+            <th>Mã dịch vụ (Điện/Nước/Net)</th>
             <th>Tình trạng</th>
             <th class="text-end">Thao tác</th>
           </tr>
@@ -169,6 +170,16 @@ foreach ($rooms as $r) {
                 <a href="<?= url('/rooms/form.php?id=' . $r['id']) ?>" class="text-decoration-none text-reset"><?= e($r['room_code']) ?></a>
               </td>
               <td><?= (int)$r['bedrooms'] ?> PN</td>
+              <td class="small text-muted">
+                <?php
+                  $codes = array_filter([
+                      $r['electricity_code'] ? 'Điện: ' . $r['electricity_code'] : '',
+                      $r['water_code'] ? 'Nước: ' . $r['water_code'] : '',
+                      $r['internet_code'] ? 'Net: ' . $r['internet_code'] : '',
+                  ]);
+                  echo $codes ? e(implode(' · ', $codes)) : '—';
+                ?>
+              </td>
               <td class="small">
                 <?php if ($occupied): ?>
                   <span class="text-primary"><?= e($roomDeals[0]['guest_name']) ?> — đến <?= vndate($roomDeals[0]['checkout_date']) ?></span>

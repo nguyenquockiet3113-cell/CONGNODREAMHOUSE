@@ -3,7 +3,7 @@ require_once __DIR__ . '/../config/config.php';
 require_login();
 
 $id = (int)($_GET['id'] ?? 0);
-$room = ['id' => 0, 'room_code' => '', 'zone' => '', 'bedrooms' => 1];
+$room = ['id' => 0, 'room_code' => '', 'zone' => '', 'bedrooms' => 1, 'electricity_code' => '', 'water_code' => '', 'internet_code' => ''];
 $errors = [];
 
 if ($id) {
@@ -24,6 +24,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $room['room_code'] = trim($_POST['room_code'] ?? '');
     $room['zone'] = trim($_POST['zone'] ?? '');
     $room['bedrooms'] = (int)($_POST['bedrooms'] ?? 1);
+    $room['electricity_code'] = trim($_POST['electricity_code'] ?? '');
+    $room['water_code'] = trim($_POST['water_code'] ?? '');
+    $room['internet_code'] = trim($_POST['internet_code'] ?? '');
 
     if ($room['room_code'] === '') {
         $errors[] = 'Vui lòng nhập mã phòng.';
@@ -40,12 +43,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$errors) {
         $now = date('Y-m-d H:i:s');
         if ($id) {
-            $stmt = $pdo->prepare('UPDATE rooms SET room_code=?, zone=?, bedrooms=?, updated_at=? WHERE id=?');
-            $stmt->execute([$room['room_code'], $room['zone'], $room['bedrooms'], $now, $id]);
+            $stmt = $pdo->prepare('UPDATE rooms SET room_code=?, zone=?, bedrooms=?, electricity_code=?, water_code=?, internet_code=?, updated_at=? WHERE id=?');
+            $stmt->execute([$room['room_code'], $room['zone'], $room['bedrooms'], $room['electricity_code'], $room['water_code'], $room['internet_code'], $now, $id]);
             flash('success', 'Đã cập nhật phòng.');
         } else {
-            $stmt = $pdo->prepare('INSERT INTO rooms (room_code, zone, bedrooms, created_at, updated_at) VALUES (?,?,?,?,?)');
-            $stmt->execute([$room['room_code'], $room['zone'], $room['bedrooms'], $now, $now]);
+            $stmt = $pdo->prepare('INSERT INTO rooms (room_code, zone, bedrooms, electricity_code, water_code, internet_code, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)');
+            $stmt->execute([$room['room_code'], $room['zone'], $room['bedrooms'], $room['electricity_code'], $room['water_code'], $room['internet_code'], $now, $now]);
             flash('success', 'Đã thêm phòng mới.');
         }
         redirect('/rooms/index.php');
@@ -80,6 +83,23 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="col-md-3">
           <label class="form-label">Số phòng ngủ</label>
           <input type="number" min="0" name="bedrooms" class="form-control" value="<?= e($room['bedrooms']) ?>">
+        </div>
+      </div>
+
+      <hr>
+      <div class="fw-semibold mb-2">Mã dịch vụ (dùng để tra cứu, tính tiền điện/nước theo chỉ số)</div>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Mã điện (PE)</label>
+          <input type="text" name="electricity_code" class="form-control" value="<?= e($room['electricity_code']) ?>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Mã nước</label>
+          <input type="text" name="water_code" class="form-control" value="<?= e($room['water_code']) ?>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Mã Internet</label>
+          <input type="text" name="internet_code" class="form-control" value="<?= e($room['internet_code']) ?>">
         </div>
       </div>
       <div class="mt-4 d-flex gap-2">
