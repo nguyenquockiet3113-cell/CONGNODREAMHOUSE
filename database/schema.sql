@@ -174,7 +174,7 @@ CREATE TABLE IF NOT EXISTS expenses (
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS cleaning_price_list (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    work_type VARCHAR(50) NOT NULL, -- OUT | LUU | Khac
+    work_type VARCHAR(50) NOT NULL, -- OUT | LUU | Tổng vệ sinh
     work_item VARCHAR(150) NOT NULL, -- vd: "1", "2", "Set up 1PN", "Tong ve sinh"
     unit VARCHAR(20) NOT NULL DEFAULT 'phong', -- phong | gio
     unit_price DECIMAL(14,0) NOT NULL DEFAULT 0,
@@ -205,7 +205,7 @@ CREATE TABLE IF NOT EXISTS cleaning_logs (
     room_code VARCHAR(50) DEFAULT NULL,
     bedrooms INT DEFAULT NULL,
     work_item VARCHAR(150) DEFAULT NULL, -- hang muc, vd: "Set up 1PN"
-    work_type VARCHAR(100) DEFAULT NULL, -- loai cong viec: OUT | LUU | Khac
+    work_type VARCHAR(100) DEFAULT NULL, -- loai cong viec: OUT | LUU | Tổng vệ sinh
     hours DECIMAL(6,2) DEFAULT NULL, -- so gio (chi dung cho hang muc tinh theo gio)
     price DECIMAL(14,0) NOT NULL DEFAULT 0,
     plus DECIMAL(14,0) NOT NULL DEFAULT 0,
@@ -294,4 +294,4 @@ INSERT INTO cleaning_price_list (work_type, work_item, unit, unit_price, created
 ('LUU', 'Set up 1PN', 'phong', 65000, NOW(), NOW()),
 ('LUU', 'Set up 2PN', 'phong', 100000, NOW(), NOW()),
 ('LUU', 'Set up 3PN', 'phong', 140000, NOW(), NOW()),
-('Khac', 'Tổng vệ sinh', 'gio', 65000, NOW(), NOW());
+('Tổng vệ sinh', 'Tổng vệ sinh', 'gio', 65000, NOW(), NOW());

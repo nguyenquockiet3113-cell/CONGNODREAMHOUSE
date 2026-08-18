@@ -18,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $bedroomsArr = $_POST['bedrooms'] ?? [];
     $workTypes = $_POST['work_type'] ?? [];
     $workItems = $_POST['work_item'] ?? [];
+    $hoursArr = $_POST['hours'] ?? [];
     $prices = $_POST['price'] ?? [];
     $pluses = $_POST['plus'] ?? [];
     $penalties = $_POST['penalty'] ?? [];
@@ -29,9 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($rc === '') continue;
         $validRows[] = [
             'room_code' => $rc,
-            'bedrooms' => $bedroomsArr[$i] !== '' ? (int)$bedroomsArr[$i] : null,
+            'bedrooms' => ($bedroomsArr[$i] ?? '') !== '' ? (int)$bedroomsArr[$i] : null,
             'work_type' => trim($workTypes[$i] ?? ''),
             'work_item' => trim($workItems[$i] ?? ''),
+            'hours' => ($hoursArr[$i] ?? '') !== '' ? (float)$hoursArr[$i] : null,
             'price' => (float)($prices[$i] ?? 0),
             'plus' => (float)($pluses[$i] ?? 0),
             'penalty' => (float)($penalties[$i] ?? 0),
@@ -45,10 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $now = date('Y-m-d H:i:s');
         foreach ($validRows as $row) {
             $pdo->prepare(
-                'INSERT INTO cleaning_logs (work_date, staff_name, room_code, bedrooms, work_item, work_type, price, plus, penalty, note, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
+                'INSERT INTO cleaning_logs (work_date, staff_name, room_code, bedrooms, work_item, work_type, hours, price, plus, penalty, note, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
             )->execute([
                 $workDate, $staffName, $row['room_code'], $row['bedrooms'], $row['work_item'], $row['work_type'],
-                $row['price'], $row['plus'], $row['penalty'], $row['note'], $now,
+                $row['hours'], $row['price'], $row['plus'], $row['penalty'], $row['note'], $now,
             ]);
         }
         flash('success', 'Đã thêm ' . count($validRows) . ' công việc cho ' . $staffName . ' ngày ' . vndate($workDate) . '.');
@@ -60,6 +62,7 @@ $staffList = $pdo->query('SELECT * FROM cleaning_staff WHERE is_active = 1 ORDER
 $rooms = $pdo->query('SELECT room_code, bedrooms FROM rooms ORDER BY room_code')->fetchAll();
 $priceList = $pdo->query('SELECT * FROM cleaning_price_list ORDER BY work_type, unit_price')->fetchAll();
 $workTypesList = array_values(array_unique(array_column($priceList, 'work_type')));
+$hangMucList = array_values(array_filter($priceList, fn($pl) => $pl['work_type'] !== 'Tổng vệ sinh' && !ctype_digit((string)$pl['work_item'])));
 
 $pageTitle = 'Thêm công việc vệ sinh';
 require_once __DIR__ . '/../includes/header.php';
@@ -110,6 +113,7 @@ require_once __DIR__ . '/../includes/header.php';
               <th style="width:80px;">Số PN</th>
               <th style="min-width:110px;">Loại</th>
               <th style="min-width:170px;">Hạng mục (tùy chọn)</th>
+              <th style="width:80px;">Số giờ</th>
               <th style="width:120px;">Price</th>
               <th style="width:100px;">Plus</th>
               <th style="width:100px;">Phạt</th>
@@ -145,11 +149,12 @@ require_once __DIR__ . '/../includes/header.php';
     <td>
       <select name="work_item[]" class="form-select form-select-sm work-item-input">
         <option value="">-- Không chọn --</option>
-        <?php foreach ($priceList as $pl): ?>
+        <?php foreach ($hangMucList as $pl): ?>
           <option value="<?= e($pl['work_item']) ?>" data-type="<?= e($pl['work_type']) ?>" data-unit="<?= e($pl['unit']) ?>" data-price="<?= $pl['unit_price'] ?>"><?= e($pl['work_item']) ?> (<?= e($pl['work_type']) ?>)</option>
         <?php endforeach; ?>
       </select>
     </td>
+    <td><input type="number" step="0.5" name="hours[]" class="form-control form-control-sm hours-input" style="display:none;"></td>
     <td><input type="number" step="1000" name="price[]" class="form-control form-control-sm price-input"></td>
     <td><input type="number" step="1000" name="plus[]" class="form-control form-control-sm" value="0"></td>
     <td><input type="number" step="1000" name="penalty[]" class="form-control form-control-sm" value="0"></td>
@@ -172,6 +177,7 @@ priceMap['<?= addslashes($pl['work_type']) ?>']['<?= addslashes($pl['work_item']
 
 var rowsBody = document.getElementById('rowsBody');
 var rowTemplate = document.getElementById('rowTemplate');
+var HOURLY_TYPE = 'Tổng vệ sinh';
 
 function addRow() {
   var clone = rowTemplate.content.cloneNode(true);
@@ -184,14 +190,26 @@ function computeRowPrice(row) {
   var typeSelect = row.querySelector('.work-type-input');
   var priceInput = row.querySelector('.price-input');
   var bedroomsInput = row.querySelector('.bedrooms-input');
+  var hoursInput = row.querySelector('.hours-input');
+  var type = typeSelect.value;
+
+  if (type === HOURLY_TYPE) {
+    itemSelect.value = '';
+    itemSelect.style.display = 'none';
+    hoursInput.style.display = '';
+    if (!hoursInput.value) hoursInput.value = 1;
+    var hourly = (priceMap[HOURLY_TYPE] && priceMap[HOURLY_TYPE][HOURLY_TYPE] !== undefined) ? priceMap[HOURLY_TYPE][HOURLY_TYPE] : 0;
+    priceInput.value = Math.round(hourly * (parseFloat(hoursInput.value) || 0));
+    return;
+  }
+  itemSelect.style.display = '';
+  hoursInput.style.display = 'none';
 
   var itemOpt = itemSelect.options[itemSelect.selectedIndex];
   if (itemOpt && itemOpt.value) {
-    typeSelect.value = itemOpt.getAttribute('data-type');
     priceInput.value = itemOpt.getAttribute('data-price');
     return;
   }
-  var type = typeSelect.value;
   var bedrooms = bedroomsInput.value;
   if (type && bedrooms && priceMap[type] && priceMap[type][bedrooms] !== undefined) {
     priceInput.value = priceMap[type][bedrooms];

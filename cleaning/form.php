@@ -29,6 +29,8 @@ $staffList = $pdo->query(
 $rooms = $pdo->query('SELECT room_code, bedrooms FROM rooms ORDER BY room_code')->fetchAll();
 $priceList = $pdo->query('SELECT * FROM cleaning_price_list ORDER BY work_type, unit_price')->fetchAll();
 $workTypes = array_values(array_unique(array_column($priceList, 'work_type')));
+// Hang muc chi hien cac muc dat ten (VD: Set up 1PN), khong hien gia tho theo so PN (1,2,3,4) va khong hien muc cua "Tong ve sinh"
+$hangMucList = array_values(array_filter($priceList, fn($pl) => $pl['work_type'] !== 'Tổng vệ sinh' && !ctype_digit((string)$pl['work_item'])));
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -103,20 +105,20 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <div class="col-md-3">
-          <label class="form-label">Loại (OUT/LƯU...) *</label>
+          <label class="form-label">Loại *</label>
           <select name="work_type" id="work_type" class="form-select">
             <option value="">-- Chọn --</option>
             <?php foreach ($workTypes as $wt): ?>
               <option value="<?= e($wt) ?>" <?= $log['work_type'] === $wt ? 'selected' : '' ?>><?= e($wt) ?></option>
             <?php endforeach; ?>
           </select>
-          <div class="form-text">Tự tính giá theo Số PN ở bảng giá.</div>
+          <div class="form-text" id="typeHint">Tự tính giá theo Số PN ở bảng giá.</div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3" id="hangMucWrap">
           <label class="form-label">Hạng mục (tùy chọn)</label>
           <select name="work_item" id="work_item" class="form-select">
             <option value="">-- Không chọn (dùng giá theo Số PN) --</option>
-            <?php foreach ($priceList as $pl): ?>
+            <?php foreach ($hangMucList as $pl): ?>
               <option value="<?= e($pl['work_item']) ?>" data-type="<?= e($pl['work_type']) ?>" data-unit="<?= e($pl['unit']) ?>" data-price="<?= $pl['unit_price'] ?>" <?= $log['work_item'] === $pl['work_item'] ? 'selected' : '' ?>><?= e($pl['work_item']) ?> (<?= e($pl['work_type']) ?>)</option>
             <?php endforeach; ?>
           </select>
@@ -166,10 +168,13 @@ document.getElementById('cl_room_code').addEventListener('input', function () {
 
 var workItemSelect = document.getElementById('work_item');
 var workTypeSelect = document.getElementById('work_type');
+var hangMucWrap = document.getElementById('hangMucWrap');
+var typeHint = document.getElementById('typeHint');
 var bedroomsInput = document.getElementById('cl_bedrooms');
 var hoursWrap = document.getElementById('hoursWrap');
 var hoursInput = document.getElementById('hours');
 var priceInput = document.getElementById('price');
+var HOURLY_TYPE = 'Tổng vệ sinh';
 
 // priceMap[work_type][work_item] = {unit, price}
 var priceMap = {};
@@ -182,25 +187,30 @@ priceMap['<?= addslashes($pl['work_type']) ?>']['<?= addslashes($pl['work_item']
 function applyItemPrice() {
   var opt = workItemSelect.options[workItemSelect.selectedIndex];
   if (!opt || !opt.value) return false;
-  workTypeSelect.value = opt.getAttribute('data-type');
-  var unit = opt.getAttribute('data-unit');
-  var unitPrice = parseFloat(opt.getAttribute('data-price')) || 0;
-  if (unit === 'gio') {
-    hoursWrap.style.display = '';
-    if (!hoursInput.value) hoursInput.value = 1;
-    priceInput.value = Math.round(unitPrice * (parseFloat(hoursInput.value) || 1));
-  } else {
-    hoursWrap.style.display = 'none';
-    priceInput.value = unitPrice;
-  }
+  priceInput.value = parseFloat(opt.getAttribute('data-price')) || 0;
   return true;
 }
 
-// Chua chon hang muc cu the -> tu tinh gia theo Loai + So PN
 function applyAutoPrice() {
-  if (applyItemPrice()) return; // hang muc da chon, uu tien gia hang muc
-  hoursWrap.style.display = 'none';
   var type = workTypeSelect.value;
+
+  if (type === HOURLY_TYPE) {
+    // Tong ve sinh: tinh theo gio, bo qua So PN va Hang muc
+    hangMucWrap.style.display = 'none';
+    workItemSelect.value = '';
+    hoursWrap.style.display = '';
+    typeHint.textContent = 'Tính theo số giờ, không phụ thuộc Số PN.';
+    if (!hoursInput.value) hoursInput.value = 1;
+    var hourly = (priceMap[HOURLY_TYPE] && priceMap[HOURLY_TYPE][HOURLY_TYPE]) ? priceMap[HOURLY_TYPE][HOURLY_TYPE].price : 0;
+    priceInput.value = Math.round(hourly * (parseFloat(hoursInput.value) || 0));
+    return;
+  }
+
+  hangMucWrap.style.display = '';
+  hoursWrap.style.display = 'none';
+  typeHint.textContent = 'Tự tính giá theo Số PN ở bảng giá.';
+
+  if (applyItemPrice()) return; // hang muc da chon, uu tien gia hang muc
   var bedrooms = bedroomsInput.value;
   if (type && bedrooms && priceMap[type] && priceMap[type][bedrooms]) {
     priceInput.value = priceMap[type][bedrooms].price;
@@ -211,12 +221,23 @@ workTypeSelect.addEventListener('change', applyAutoPrice);
 bedroomsInput.addEventListener('input', applyAutoPrice);
 workItemSelect.addEventListener('change', applyAutoPrice);
 hoursInput.addEventListener('input', function () {
-  var opt = workItemSelect.options[workItemSelect.selectedIndex];
-  if (opt && opt.getAttribute('data-unit') === 'gio') {
-    var unitPrice = parseFloat(opt.getAttribute('data-price')) || 0;
-    priceInput.value = Math.round(unitPrice * (parseFloat(hoursInput.value) || 0));
+  var hourly = (priceMap[HOURLY_TYPE] && priceMap[HOURLY_TYPE][HOURLY_TYPE]) ? priceMap[HOURLY_TYPE][HOURLY_TYPE].price : 0;
+  if (workTypeSelect.value === HOURLY_TYPE) {
+    priceInput.value = Math.round(hourly * (parseFloat(hoursInput.value) || 0));
   }
 });
-<?php if ($log['hours']): ?>hoursWrap.style.display = '';<?php endif; ?>
+
+// Khi tai trang (vd sua ban ghi co san), chi dong bo hien/an cac o, KHONG ghi de gia da luu
+function syncVisibilityOnly() {
+  if (workTypeSelect.value === HOURLY_TYPE) {
+    hangMucWrap.style.display = 'none';
+    hoursWrap.style.display = '';
+    typeHint.textContent = 'Tính theo số giờ, không phụ thuộc Số PN.';
+  } else {
+    hangMucWrap.style.display = '';
+    hoursWrap.style.display = 'none';
+  }
+}
+syncVisibilityOnly();
 </script>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

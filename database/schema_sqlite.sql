@@ -234,4 +234,4 @@ INSERT INTO cleaning_price_list (work_type, work_item, unit, unit_price, created
 ('LUU', 'Set up 1PN', 'phong', 65000, datetime('now'), datetime('now')),
 ('LUU', 'Set up 2PN', 'phong', 100000, datetime('now'), datetime('now')),
 ('LUU', 'Set up 3PN', 'phong', 140000, datetime('now'), datetime('now')),
-('Khac', 'Tổng vệ sinh', 'gio', 65000, datetime('now'), datetime('now'));
+('Tổng vệ sinh', 'Tổng vệ sinh', 'gio', 65000, datetime('now'), datetime('now'));
