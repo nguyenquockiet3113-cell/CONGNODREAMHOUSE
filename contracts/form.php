@@ -282,22 +282,31 @@ require_once __DIR__ . '/../includes/header.php';
         </select>
       </div>
       <div class="col-md-3">
-        <label class="form-label">Tài khoản nhận</label>
-        <input type="text" name="receiving_account" class="form-control" list="bankAccList" placeholder="Số TK" value="<?= e($contract['receiving_account']) ?>">
-        <datalist id="bankAccList">
-          <?php foreach ($bankAccounts as $ba): ?><option value="<?= e($ba['account_number']) ?>"><?php endforeach; ?>
-        </datalist>
+        <label class="form-label">Chọn tài khoản có sẵn</label>
+        <select id="bankAccountPicker" class="form-select">
+          <option value="">-- Chọn để tự điền --</option>
+          <?php foreach ($bankAccounts as $ba): ?>
+            <option value="<?= (int)$ba['id'] ?>"
+              data-account="<?= e($ba['account_number']) ?>"
+              data-bank="<?= e($ba['bank_name']) ?>"
+              data-holder="<?= e($ba['account_holder']) ?>">
+              <?= e($ba['bank_name']) ?><?= $ba['account_number'] ? ' - ' . e($ba['account_number']) : '' ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+        <div class="form-text"><a href="<?= url('/bank_accounts/index.php') ?>" target="_blank">+ Quản lý danh sách tài khoản nhận</a></div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Tài khoản nhận (số TK)</label>
+        <input type="text" name="receiving_account" id="receiving_account" class="form-control" placeholder="Số TK" value="<?= e($contract['receiving_account']) ?>">
       </div>
       <div class="col-md-3">
         <label class="form-label">Ngân hàng</label>
-        <input type="text" name="bank_name" class="form-control" list="bankNameList" value="<?= e($contract['bank_name']) ?>">
-        <datalist id="bankNameList">
-          <?php foreach ($bankAccounts as $ba): ?><option value="<?= e($ba['bank_name']) ?>"><?php endforeach; ?>
-        </datalist>
+        <input type="text" name="bank_name" id="bank_name" class="form-control" value="<?= e($contract['bank_name']) ?>">
       </div>
       <div class="col-md-3">
         <label class="form-label">Người thụ hưởng</label>
-        <input type="text" name="beneficiary_name" class="form-control" value="<?= e($contract['beneficiary_name']) ?>">
+        <input type="text" name="beneficiary_name" id="beneficiary_name" class="form-control" value="<?= e($contract['beneficiary_name']) ?>">
       </div>
       <div class="col-12">
         <label class="form-label">Ghi chú thanh toán</label>
@@ -335,6 +344,14 @@ document.getElementById('room_code').addEventListener('change', function () {
   var z = roomZoneMap[this.value];
   var zoneInput = document.getElementById('zone');
   if (z && !zoneInput.value) zoneInput.value = z;
+});
+
+document.getElementById('bankAccountPicker').addEventListener('change', function () {
+  var opt = this.options[this.selectedIndex];
+  if (!opt.value) return;
+  document.getElementById('receiving_account').value = opt.getAttribute('data-account') || '';
+  document.getElementById('bank_name').value = opt.getAttribute('data-bank') || '';
+  document.getElementById('beneficiary_name').value = opt.getAttribute('data-holder') || '';
 });
 </script>
 

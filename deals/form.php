@@ -35,6 +35,11 @@ if ($id) {
 
 $rooms = $pdo->query('SELECT room_code, zone, bedrooms FROM rooms ORDER BY room_code')->fetchAll();
 $bankAccounts = $pdo->query('SELECT * FROM bank_accounts ORDER BY bank_name')->fetchAll();
+// Gia gan nhat da dung cho tung ma phong (goi y de nhap nhanh hon)
+$lastPriceByRoom = $pdo->query(
+    'SELECT room_code, price_per_unit FROM deals WHERE id IN (SELECT MAX(id) FROM deals GROUP BY room_code)'
+)->fetchAll(PDO::FETCH_KEY_PAIR);
+$saveAndNew = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -205,10 +210,20 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
         <div class="col-md-3">
           <label class="form-label">Tài khoản nhận</label>
-          <input type="text" name="receiving_account" class="form-control" list="bankAccList" placeholder="Nhập tay hoặc chọn" value="<?= e($deal['receiving_account']) ?>">
-          <datalist id="bankAccList">
-            <?php foreach ($bankAccounts as $ba): ?><option value="<?= e($ba['bank_name']) ?><?= $ba['account_number'] ? ' - ' . e($ba['account_number']) : '' ?>"><?php endforeach; ?>
-          </datalist>
+          <?php
+            $recvOptions = array_map(fn($ba) => trim($ba['bank_name'] . ($ba['account_number'] ? ' - ' . $ba['account_number'] : '')), $bankAccounts);
+            $recvCurrent = (string)$deal['receiving_account'];
+          ?>
+          <select name="receiving_account" class="form-select">
+            <option value="">-- Chưa chọn --</option>
+            <?php foreach ($recvOptions as $opt): ?>
+              <option value="<?= e($opt) ?>" <?= $recvCurrent === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
+            <?php endforeach; ?>
+            <?php if ($recvCurrent !== '' && !in_array($recvCurrent, $recvOptions, true)): ?>
+              <option value="<?= e($recvCurrent) ?>" selected><?= e($recvCurrent) ?></option>
+            <?php endif; ?>
+          </select>
+          <div class="form-text"><a href="<?= url('/bank_accounts/index.php') ?>" target="_blank">+ Quản lý danh sách tài khoản nhận</a></div>
         </div>
         <div class="col-md-3">
           <label class="form-label">Đã CK/TM (đ)</label>
