@@ -22,8 +22,8 @@ if (!$deal) {
 $remain = (float)$deal['total_amount'] - (float)$deal['paid_amount'];
 if ($remain > 0) {
     $now = date('Y-m-d H:i:s');
-    $pdo->prepare('INSERT INTO deal_payments (deal_id, payment_date, amount, method, note, created_at) VALUES (?,?,?,?,?,?)')
-        ->execute([$dealId, date('Y-m-d'), $remain, $deal['payment_method'], 'Đánh dấu đã thu đủ', $now]);
+    $pdo->prepare('INSERT INTO deal_payments (deal_id, payment_date, amount, method, receiving_account, note, created_at) VALUES (?,?,?,?,?,?,?)')
+        ->execute([$dealId, date('Y-m-d'), $remain, $deal['payment_method'], $deal['receiving_account'], 'Đánh dấu đã thu đủ', $now]);
     recompute_deal_paid_amount($pdo, $dealId);
     flash('success', 'Đã đánh dấu thu đủ cho ' . $deal['guest_name'] . '.');
 } else {

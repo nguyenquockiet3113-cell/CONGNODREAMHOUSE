@@ -5,7 +5,10 @@ require_login();
 $month = trim($_GET['month'] ?? date('Y-m'));
 $category = trim($_GET['category'] ?? '');
 
-$sql = "SELECT ex.*, r.room_code FROM expenses ex LEFT JOIN rooms r ON r.id = ex.room_id WHERE 1=1";
+$sql = "SELECT ex.*, r.room_code, ba.bank_name, ba.account_number FROM expenses ex
+    LEFT JOIN rooms r ON r.id = ex.room_id
+    LEFT JOIN bank_accounts ba ON ba.id = ex.bank_account_id
+    WHERE 1=1";
 $params = [];
 if ($month !== '') {
     $sql .= " AND substr(ex.expense_date, 1, 7) = ?";
@@ -71,13 +74,14 @@ require_once __DIR__ . '/../includes/header.php';
           <th>Danh mục</th>
           <th>Phòng</th>
           <th>Mô tả</th>
+          <th>TK chi</th>
           <th>Số tiền</th>
           <th class="text-end">Thao tác</th>
         </tr>
       </thead>
       <tbody>
         <?php if (!$expenses): ?>
-          <tr><td colspan="6" class="text-center text-muted py-4">Chưa có chi phí nào.</td></tr>
+          <tr><td colspan="7" class="text-center text-muted py-4">Chưa có chi phí nào.</td></tr>
         <?php endif; ?>
         <?php foreach ($expenses as $ex): ?>
           <tr>
@@ -85,6 +89,7 @@ require_once __DIR__ . '/../includes/header.php';
             <td><span class="badge bg-light text-dark border"><?= e($ex['category']) ?></span></td>
             <td><?= e($ex['room_code'] ?? '') ?></td>
             <td><?= e($ex['description']) ?></td>
+            <td class="small"><?= $ex['bank_name'] ? e(trim($ex['bank_name'] . ($ex['account_number'] ? ' - ' . $ex['account_number'] : ''))) : '<span class="text-muted">Tiền mặt</span>' ?></td>
             <td class="text-danger fw-semibold"><?= money($ex['amount']) ?></td>
             <td class="text-end">
               <a href="<?= url('/expenses/form.php?id=' . $ex['id']) ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>

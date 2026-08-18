@@ -163,6 +163,7 @@ require_once __DIR__ . '/../includes/header.php';
           <th class="text-end">Tổng cộng</th>
           <th class="text-end">Đã thu</th>
           <th class="text-end">Còn lại</th>
+          <th>TK nhận</th>
           <th>Hạn thanh toán</th>
           <th>Tình trạng</th>
           <th class="text-end">Thao tác</th>
@@ -170,7 +171,7 @@ require_once __DIR__ . '/../includes/header.php';
       </thead>
       <tbody>
         <?php if (!$deals): ?>
-          <tr><td colspan="10" class="text-center text-muted py-4">Chưa có deal dài hạn nào.</td></tr>
+          <tr><td colspan="11" class="text-center text-muted py-4">Chưa có deal dài hạn nào.</td></tr>
         <?php endif; ?>
         <?php foreach ($deals as $d): ?>
           <?php $stat = $dealStats[$d['id']]; $remain = $stat['total'] - $stat['paid']; $due = $nextDueByDeal[$d['id']] ?? null; ?>
@@ -182,6 +183,7 @@ require_once __DIR__ . '/../includes/header.php';
             <td class="text-end"><?= money($stat['total']) ?></td>
             <td class="text-end text-success"><?= money($stat['paid']) ?></td>
             <td class="text-end <?= $remain > 0 ? 'text-danger' : '' ?>"><?= money($remain) ?></td>
+            <td class="small"><?= $d['receiving_account'] ? e($d['receiving_account']) : '<span class="text-muted">—</span>' ?></td>
             <td class="small">
               <?php if (!$due): ?>
                 <span class="text-success"><i class="bi bi-check-circle"></i> Đã TT đủ</span>

@@ -360,13 +360,14 @@ require_once __DIR__ . '/../includes/header.php';
       <div class="text-muted small mb-3">Chưa có lần thanh toán nào.</div>
     <?php else: ?>
       <table class="table table-sm mb-3">
-        <thead><tr><th>Ngày</th><th>Số tiền</th><th>Hình thức</th><th>Ghi chú</th><th></th></tr></thead>
+        <thead><tr><th>Ngày</th><th>Số tiền</th><th>Hình thức</th><th>TK nhận</th><th>Ghi chú</th><th></th></tr></thead>
         <tbody>
           <?php foreach ($payments as $p): ?>
             <tr>
               <td><?= vndate($p['payment_date']) ?></td>
               <td class="fw-semibold"><?= money($p['amount']) ?></td>
               <td><?= $p['method'] === 'tien_mat' ? 'Tiền mặt' : 'Chuyển khoản' ?></td>
+              <td class="small"><?= $p['receiving_account'] ? e($p['receiving_account']) : '<span class="text-muted">—</span>' ?></td>
               <td class="small"><?= e($p['note']) ?></td>
               <td class="text-end">
                 <form method="post" action="<?= url('/deals/delete_payment.php') ?>" data-confirm="Xóa lần thanh toán này?">
@@ -398,6 +399,15 @@ require_once __DIR__ . '/../includes/header.php';
         <select name="method" class="form-select">
           <option value="chuyen_khoan">Chuyển khoản</option>
           <option value="tien_mat">Tiền mặt</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">TK nhận</label>
+        <select name="receiving_account" class="form-select">
+          <option value="">-- Theo deal --</option>
+          <?php foreach ($recvOptions as $opt): ?>
+            <option value="<?= e($opt) ?>" <?= $recvCurrent === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
+          <?php endforeach; ?>
         </select>
       </div>
       <div class="col-md-3">

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/xlsx_writer.php';
 require_login();
 
 $search = trim($_GET['q'] ?? '');
@@ -21,17 +22,15 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $deals = $stmt->fetchAll();
 
-header('Content-Type: text/csv; charset=UTF-8');
-header('Content-Disposition: attachment; filename="doanh-thu-ngan-han-' . date('Y-m-d') . '.csv"');
-
-$out = fopen('php://output', 'w');
-fwrite($out, "\xEF\xBB\xBF"); // BOM de Excel doc dung UTF-8
-csv_out($out, ['note', 'guest_name', 'room_code', 'bedrooms', 'nights', 'price_per_unit', 'checkin_date', 'checkout_date', 'extra_fee', 'total_amount', 'paid_amount', 'payment_status']);
+$headers = ['Ghi chú', 'Tên khách', 'Mã phòng', 'Số PN', 'Số đêm', 'Đơn giá', 'Check-in', 'Check-out', 'Phụ phí', 'Tổng tiền', 'Đã thu', 'Còn lại', 'TK nhận', 'Trạng thái TT'];
+$rows = [];
 foreach ($deals as $d) {
-    csv_out($out, [
-        $d['note'], $d['guest_name'], $d['room_code'], $d['bedrooms'], $d['nights'], $d['price_per_unit'],
-        $d['checkin_date'], $d['checkout_date'], $d['extra_fee'], $d['total_amount'], $d['paid_amount'], $d['payment_status'],
-    ]);
+    $rows[] = [
+        $d['note'], $d['guest_name'], $d['room_code'], $d['bedrooms'], $d['nights'], (float)$d['price_per_unit'],
+        vndate($d['checkin_date']), vndate($d['checkout_date']), (float)$d['extra_fee'], (float)$d['total_amount'],
+        (float)$d['paid_amount'], (float)$d['total_amount'] - (float)$d['paid_amount'], $d['receiving_account'],
+        $d['payment_status'] === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán',
+    ];
 }
-fclose($out);
-exit;
+
+write_xlsx_and_exit('doanh-thu-ngan-han-' . date('Y-m-d') . '.xlsx', $headers, $rows, [3, 4, 5, 8, 9, 10, 11]);

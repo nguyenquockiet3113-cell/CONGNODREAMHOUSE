@@ -160,6 +160,7 @@ CREATE TABLE IF NOT EXISTS deal_payments (
     payment_date DATE NOT NULL,
     amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     method VARCHAR(20) NOT NULL DEFAULT 'chuyen_khoan',
+    receiving_account VARCHAR(100),
     note VARCHAR(255),
     created_at DATETIME NOT NULL,
     FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE CASCADE

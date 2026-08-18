@@ -12,11 +12,13 @@ $dealId = (int)($_POST['deal_id'] ?? 0);
 $paymentDate = $_POST['payment_date'] ?? '';
 $amount = (float)($_POST['amount'] ?? 0);
 $method = $_POST['method'] ?? 'chuyen_khoan';
+$receivingAccount = trim($_POST['receiving_account'] ?? '');
 $note = trim($_POST['note'] ?? '');
 
-$dealStmt = $pdo->prepare('SELECT id FROM deals WHERE id = ?');
+$dealStmt = $pdo->prepare('SELECT id, receiving_account FROM deals WHERE id = ?');
 $dealStmt->execute([$dealId]);
-if (!$dealStmt->fetch()) {
+$deal = $dealStmt->fetch();
+if (!$deal) {
     flash('danger', 'Không tìm thấy deal.');
     redirect('/deals/short.php');
 }
@@ -26,9 +28,11 @@ if (!$paymentDate || $amount <= 0) {
     redirect('/deals/form.php?id=' . $dealId);
 }
 
+if ($receivingAccount === '') $receivingAccount = $deal['receiving_account'];
+
 $now = date('Y-m-d H:i:s');
-$pdo->prepare('INSERT INTO deal_payments (deal_id, payment_date, amount, method, note, created_at) VALUES (?,?,?,?,?,?)')
-    ->execute([$dealId, $paymentDate, $amount, $method, $note, $now]);
+$pdo->prepare('INSERT INTO deal_payments (deal_id, payment_date, amount, method, receiving_account, note, created_at) VALUES (?,?,?,?,?,?,?)')
+    ->execute([$dealId, $paymentDate, $amount, $method, $receivingAccount, $note, $now]);
 
 recompute_deal_paid_amount($pdo, $dealId);
 

@@ -30,7 +30,7 @@ require_once __DIR__ . '/../includes/header.php';
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <h4 class="mb-0"><i class="bi bi-calendar-check"></i> Doanh thu ngắn hạn</h4>
   <div class="d-flex gap-2">
-    <a href="<?= url('/deals/export.php?' . http_build_query($_GET)) ?>" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-arrow-down"></i> Xuất CSV</a>
+    <a href="<?= url('/deals/export.php?' . http_build_query($_GET)) ?>" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-excel"></i> Xuất Excel</a>
     <a href="<?= url('/deals/import.php') ?>" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-arrow-up"></i> Nhập từ Excel</a>
     <a href="<?= url('/deals/form.php') ?>" class="btn btn-success"><i class="bi bi-plus-lg"></i> Thêm deal</a>
   </div>
@@ -92,13 +92,14 @@ require_once __DIR__ . '/../includes/header.php';
           <th class="text-end">TỔNG</th>
           <th class="text-end">ĐÃ CK/TM</th>
           <th class="text-end">Còn lại</th>
+          <th>TK nhận</th>
           <th>Đã TT</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         <?php if (!$deals): ?>
-          <tr><td colspan="15" class="text-center text-muted py-4">Chưa có deal ngắn hạn nào.</td></tr>
+          <tr><td colspan="16" class="text-center text-muted py-4">Chưa có deal ngắn hạn nào.</td></tr>
         <?php endif; ?>
         <?php foreach ($deals as $d): ?>
           <?php
@@ -120,6 +121,7 @@ require_once __DIR__ . '/../includes/header.php';
             <td class="text-end fw-semibold"><?= money($grand) ?></td>
             <td class="text-end"><?= money($d['paid_amount']) ?></td>
             <td class="text-end <?= $remain > 0 ? 'text-danger' : '' ?>"><?= money($remain) ?></td>
+            <td class="small"><?= $d['receiving_account'] ? e($d['receiving_account']) : '<span class="text-muted">—</span>' ?></td>
             <td class="text-center"><?= $d['payment_status'] === 'paid' ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>' ?></td>
             <td class="text-end">
               <?php if ($d['payment_status'] !== 'paid'): ?>
