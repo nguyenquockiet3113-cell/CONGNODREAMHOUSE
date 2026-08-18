@@ -80,6 +80,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $rentTotal = deal_rent_total($nights, $deal['price_per_unit'], $dealType);
         $vatAmount = !empty($deal['apply_vat']) ? round($rentTotal * (float)$deal['vat_percent'] / 100) : 0;
         $total = $rentTotal + $vatAmount + $deal['extra_fee'];
+
+        // Xuat hoa don: thay tong bang gia ke khai + VAT 8% (thay vi gia thuc nhan), ap dung cho ngan han
+        if ($dealType === 'ngan_han' && !empty($deal['issue_invoice']) && $deal['invoice_declared_price'] > 0) {
+            $declaredTotal = $nights * (float)$deal['invoice_declared_price'];
+            $invoiceVat = round($declaredTotal * INVOICE_VAT_PERCENT / 100);
+            $total = $declaredTotal + $invoiceVat + $deal['extra_fee'];
+        }
         $now = date('Y-m-d H:i:s');
 
         $cols = [
@@ -255,11 +262,26 @@ require_once __DIR__ . '/../includes/header.php';
           <input type="text" class="form-control" disabled value="<?= money($deal['paid_amount']) ?>">
           <div class="form-text">Cộng dồn từ lịch sử thanh toán bên dưới, không nhập trực tiếp.</div>
         </div>
+        <div class="col-md-3 d-flex align-items-center">
+          <div class="form-check">
+            <input type="checkbox" name="issue_invoice" id="issue_invoice" class="form-check-input" value="1" <?= !empty($deal['issue_invoice']) ? 'checked' : '' ?>>
+            <label class="form-check-label" for="issue_invoice">Xuất hóa đơn (VAT)</label>
+          </div>
+        </div>
+        <div class="col-md-3" id="invoiceDeclaredPriceWrap" style="<?= empty($deal['issue_invoice']) ? 'display:none;' : '' ?>">
+          <label class="form-label">Giá kê khai /đêm (đ)</label>
+          <input type="number" step="1000" name="invoice_declared_price" id="invoice_declared_price" class="form-control" value="<?= e($deal['invoice_declared_price']) ?>">
+        </div>
+        <?php if ($id && !empty($deal['issue_invoice'])): ?>
+          <div class="col-md-3 d-flex align-items-end">
+            <a href="<?= url('/deals/invoice_calc.php?id=' . $id) ?>" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="bi bi-receipt-cutoff"></i> Xem bảng kê xuất hóa đơn</a>
+          </div>
+        <?php endif; ?>
       </div>
 
       <div class="mt-2">
         <a href="#advancedFields" data-bs-toggle="collapse" class="small"><i class="bi bi-chevron-down"></i> Thêm chi tiết thanh toán (cọc, hình thức, tài khoản nhận)</a>
-        <div class="collapse<?= ($deal['deposit_amount'] || $deal['deposit_date'] || $deal['receiving_account'] || $deal['issue_invoice']) ? ' show' : '' ?> mt-2" id="advancedFields">
+        <div class="collapse<?= ($deal['deposit_amount'] || $deal['deposit_date'] || $deal['receiving_account']) ? ' show' : '' ?> mt-2" id="advancedFields">
           <div class="row g-3">
             <div class="col-md-3">
               <label class="form-label">Tiền cọc (đ)</label>
@@ -293,24 +315,6 @@ require_once __DIR__ . '/../includes/header.php';
               </select>
               <div class="form-text"><a href="<?= url('/bank_accounts/index.php') ?>" target="_blank">+ Quản lý danh sách tài khoản nhận</a></div>
             </div>
-          </div>
-
-          <div class="row g-3 mt-1">
-            <div class="col-md-3 d-flex align-items-end">
-              <div class="form-check">
-                <input type="checkbox" name="issue_invoice" id="issue_invoice" class="form-check-input" value="1" <?= !empty($deal['issue_invoice']) ? 'checked' : '' ?>>
-                <label class="form-check-label" for="issue_invoice">Xuất hóa đơn (VAT)</label>
-              </div>
-            </div>
-            <div class="col-md-3" id="invoiceDeclaredPriceWrap" style="<?= empty($deal['issue_invoice']) ? 'display:none;' : '' ?>">
-              <label class="form-label">Giá kê khai /đêm (đ)</label>
-              <input type="number" step="1000" name="invoice_declared_price" class="form-control" value="<?= e($deal['invoice_declared_price']) ?>">
-            </div>
-            <?php if ($id): ?>
-              <div class="col-md-3 d-flex align-items-end">
-                <a href="<?= url('/deals/invoice_calc.php?id=' . $id) ?>" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="bi bi-receipt-cutoff"></i> Xem bảng kê xuất hóa đơn</a>
-              </div>
-            <?php endif; ?>
           </div>
         </div>
       </div>
@@ -691,12 +695,25 @@ function recalc() {
   } else {
     rentTotal = nights * price;
   }
+
+  var issueInvoiceEl = document.getElementById('issue_invoice');
+  var declaredPriceEl = document.getElementById('invoice_declared_price');
+  if (!isLong && issueInvoiceEl && issueInvoiceEl.checked && declaredPriceEl) {
+    var declaredPrice = parseFloat(declaredPriceEl.value) || 0;
+    if (declaredPrice > 0) {
+      var declaredTotal = nights * declaredPrice;
+      var vatAmount = Math.round(declaredTotal * 0.08);
+      rentTotal = declaredTotal + vatAmount;
+    }
+  }
+
   document.getElementById('totalDisplay').value = fmt(rentTotal + extra);
 }
 
-['checkin_date', 'checkout_date', 'price_per_unit', 'extra_fee'].forEach(function (id) {
+['checkin_date', 'checkout_date', 'price_per_unit', 'extra_fee', 'invoice_declared_price'].forEach(function (id) {
   document.getElementById(id).addEventListener('input', recalc);
 });
+document.getElementById('issue_invoice').addEventListener('change', recalc);
 recalc();
 </script>
 

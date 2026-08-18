@@ -2,6 +2,8 @@
 /** Quy uoc: >= 30 dem la Dai han */
 const DEAL_PERIOD_DAYS = 30;
 const DEAL_LONG_TERM_THRESHOLD_NIGHTS = 30;
+const INVOICE_VAT_PERCENT = 8;
+const INVOICE_TNDN_PERCENT = 20;
 
 /** Anh xa key khoan phi -> ten field POST tuong ung, dung chung cho form sua ky va logic khach tu dong. */
 const DEAL_FEE_KEYS = [

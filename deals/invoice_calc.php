@@ -3,9 +3,6 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/deal_helpers.php';
 require_login();
 
-const INVOICE_VAT_PERCENT = 8;
-const INVOICE_TNDN_PERCENT = 20;
-
 $id = (int)($_GET['id'] ?? 0);
 $stmt = $pdo->prepare('SELECT * FROM deals WHERE id = ?');
 $stmt->execute([$id]);
