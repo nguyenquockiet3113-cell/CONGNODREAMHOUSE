@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/xlsx_reader.php';
 require_login();
 
 $result = null;
@@ -9,25 +10,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
     if (empty($_FILES['csv_file']['name']) || $_FILES['csv_file']['error'] !== UPLOAD_ERR_OK) {
-        $errors[] = 'Vui lòng chọn file CSV để nhập.';
+        $errors[] = 'Vui lòng chọn file CSV hoặc Excel (.xlsx) để nhập.';
     } else {
-        $handle = fopen($_FILES['csv_file']['tmp_name'], 'r');
-        $bom = fread($handle, 3);
-        if ($bom !== "\xEF\xBB\xBF") rewind($handle);
+        $tmpPath = $_FILES['csv_file']['tmp_name'];
+        $ext = strtolower(pathinfo($_FILES['csv_file']['name'], PATHINFO_EXTENSION));
 
-        $header = fgetcsv($handle);
+        try {
+            $allRows = [];
+            if ($ext === 'xlsx') {
+                $allRows = read_xlsx_rows($tmpPath);
+            } else {
+                $handle = fopen($tmpPath, 'r');
+                $bom = fread($handle, 3);
+                if ($bom !== "\xEF\xBB\xBF") rewind($handle);
+                while (($row = fgetcsv($handle)) !== false) $allRows[] = $row;
+                fclose($handle);
+            }
+        } catch (Throwable $e) {
+            $errors[] = 'Lỗi đọc file: ' . $e->getMessage();
+            $allRows = [];
+        }
+
+        $header = $allRows ? array_shift($allRows) : null;
         if (!$header) {
-            $errors[] = 'File CSV rỗng hoặc không đúng định dạng.';
+            if (!$errors) $errors[] = 'File rỗng hoặc không đúng định dạng.';
         } else {
-            $header = array_map(fn($h) => trim(strtolower($h)), $header);
+            $header = array_map(fn($h) => trim(strtolower((string)$h)), $header);
             if (!in_array('room_code', $header, true)) {
                 $errors[] = 'File thiếu cột bắt buộc: room_code. Các cột hỗ trợ: room_code, zone, bedrooms.';
             } else {
                 $inserted = 0; $updated = 0; $skipped = 0;
                 $now = date('Y-m-d H:i:s');
-                while (($row = fgetcsv($handle)) !== false) {
-                    if (count($row) < count($header)) continue;
-                    $r = array_combine($header, $row);
+                foreach ($allRows as $row) {
+                    if (!$row || count(array_filter($row, fn($v) => $v !== '')) === 0) continue;
+                    while (count($row) < count($header)) $row[] = '';
+                    $r = array_combine($header, array_slice($row, 0, count($header)));
                     $roomCode = trim($r['room_code'] ?? '');
                     if ($roomCode === '') { $skipped++; continue; }
                     $zone = trim($r['zone'] ?? '');
@@ -47,7 +64,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $inserted++;
                     }
                 }
-                fclose($handle);
                 $result = ['inserted' => $inserted, 'updated' => $updated, 'skipped' => $skipped];
             }
         }
@@ -73,14 +89,14 @@ require_once __DIR__ . '/../includes/header.php';
 <div class="card">
   <div class="card-body">
     <p class="small text-muted">
-      File CSV cần có dòng tiêu đề (header) với cột bắt buộc: <code>room_code</code>. Có thể thêm cột tùy chọn: <code>zone, bedrooms</code>.
+      Nhận cả file <strong>.xlsx</strong> (Excel) và <strong>.csv</strong> — không cần Save As CSV trước. File cần có dòng tiêu đề (header) với cột bắt buộc: <code>room_code</code>. Có thể thêm cột tùy chọn: <code>zone, bedrooms</code>.
       Phòng có mã trùng với phòng đã có sẽ được <strong>cập nhật</strong> (khu vực, số phòng ngủ), mã chưa có sẽ được <strong>thêm mới</strong>.
     </p>
     <a href="<?= url('/rooms/sample_template.php') ?>" class="btn btn-outline-secondary mb-3"><i class="bi bi-download"></i> Tải file mẫu (CSV)</a>
     <form method="post" enctype="multipart/form-data">
       <?= csrf_field() ?>
       <div class="mb-3">
-        <input type="file" name="csv_file" accept=".csv" class="form-control" required>
+        <input type="file" name="csv_file" accept=".csv,.xlsx" class="form-control" required>
       </div>
       <button type="submit" class="btn btn-success"><i class="bi bi-upload"></i> Nhập dữ liệu</button>
       <a href="<?= url('/rooms/index.php') ?>" class="btn btn-outline-secondary">Quay lại</a>
