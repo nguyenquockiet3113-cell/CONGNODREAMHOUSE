@@ -115,6 +115,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 generate_deal_periods($pdo, $id, $deal['checkin_date'], $deal['checkout_date'], $deal['price_per_unit'], $deal['deposit_amount']);
             }
 
+            // Neu co tung ky rieng (vd doi gia giua chung), tong tien phai la TONG cac ky
+            // (khong phai gia dan x so thang) de khop voi so thuc te da chinh sua tung ky
+            if ($dealType === 'dai_han') {
+                // Coc khong tinh vao tong can thu (coc duoc theo doi rieng qua lich su thanh toan)
+                $sumStmt = $pdo->prepare('SELECT COALESCE(SUM(rent_amount + utilities_amount),0) FROM deal_periods WHERE deal_id = ?');
+                $sumStmt->execute([$id]);
+                $periodsSum = (float)$sumStmt->fetchColumn();
+                $pdo->prepare('UPDATE deals SET total_amount = ? WHERE id = ?')->execute([$periodsSum, $id]);
+            }
+
             recompute_deal_paid_amount($pdo, $id);
             flash('success', 'Đã cập nhật deal.');
         } else {
@@ -128,6 +138,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($dealType === 'dai_han') {
                 generate_deal_periods($pdo, $id, $deal['checkin_date'], $deal['checkout_date'], $deal['price_per_unit'], $deal['deposit_amount']);
+                // Coc khong tinh vao tong can thu (coc duoc theo doi rieng qua lich su thanh toan)
+                $sumStmt = $pdo->prepare('SELECT COALESCE(SUM(rent_amount + utilities_amount),0) FROM deal_periods WHERE deal_id = ?');
+                $sumStmt->execute([$id]);
+                $periodsSum = (float)$sumStmt->fetchColumn();
+                $pdo->prepare('UPDATE deals SET total_amount = ? WHERE id = ?')->execute([$periodsSum, $id]);
             }
 
             flash('success', 'Đã thêm deal mới (' . ($dealType === 'dai_han' ? 'Dài hạn' : 'Ngắn hạn') . ').');
@@ -418,6 +433,7 @@ if (periodsTableBody) {
   periodsTableBody.addEventListener('input', function (e) {
     var row = e.target.closest('.period-row');
     if (row) recalcPeriodRow(row);
+    if (typeof recalc === 'function') recalc();
   });
 }
 
@@ -460,12 +476,37 @@ function recalc() {
   if (checkin && checkout && checkout > checkin) {
     nights = Math.round((checkout - checkin) / 86400000);
   }
-  var type = nights >= 30 ? 'Dài hạn' : 'Ngắn hạn';
+  var isLong = nights >= 30;
+  var type = isLong ? 'Dài hạn' : 'Ngắn hạn';
   document.getElementById('nightsDisplay').value = nights + ' đêm (' + type + ')';
 
   var price = parseFloat(document.getElementById('price_per_unit').value) || 0;
   var extra = parseFloat(document.getElementById('extra_fee').value) || 0;
-  document.getElementById('totalDisplay').value = fmt(nights * price + extra);
+
+  // Da co bang chi tiet tung ky -> tong that su la TONG cac ky (co the da chinh sua gia rieng tung ky),
+  // khong phai gia dan x so thang nua
+  var periodRows = periodsTableBody ? periodsTableBody.querySelectorAll('.period-row') : [];
+  if (periodRows.length > 0) {
+    var sum = 0;
+    periodRows.forEach(function (row) {
+      var val = function (cls) { return parseFloat(row.querySelector('.' + cls) ? row.querySelector('.' + cls).value : 0) || 0; };
+      var fees = 0;
+      row.querySelectorAll('.p-fee').forEach(function (inp) { fees += parseFloat(inp.value) || 0; });
+      sum += val('p-rent') + fees;
+    });
+    document.getElementById('totalDisplay').value = fmt(sum + extra);
+    return;
+  }
+
+  var rentTotal;
+  if (isLong) {
+    var fullMonths = Math.floor(nights / 30);
+    var remainderDays = nights % 30;
+    rentTotal = fullMonths * price + (remainderDays > 0 ? Math.round(price * remainderDays / 30) : 0);
+  } else {
+    rentTotal = nights * price;
+  }
+  document.getElementById('totalDisplay').value = fmt(rentTotal + extra);
 }
 
 ['checkin_date', 'checkout_date', 'price_per_unit', 'extra_fee'].forEach(function (id) {
