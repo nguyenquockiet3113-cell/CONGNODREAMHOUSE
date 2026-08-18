@@ -151,61 +151,73 @@ require_once __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<div class="card">
-  <div class="table-responsive">
-    <table class="table table-hover mb-0 align-middle">
-      <thead>
-        <tr>
-          <th>Phòng</th>
-          <th>Khách</th>
-          <th>Thời hạn</th>
-          <th>Số kỳ</th>
-          <th class="text-end">Tổng cộng</th>
-          <th class="text-end">Đã thu</th>
-          <th class="text-end">Còn lại</th>
-          <th>TK nhận</th>
-          <th>Hạn thanh toán</th>
-          <th>Tình trạng</th>
-          <th class="text-end">Thao tác</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php if (!$deals): ?>
-          <tr><td colspan="11" class="text-center text-muted py-4">Chưa có deal dài hạn nào.</td></tr>
-        <?php endif; ?>
-        <?php foreach ($deals as $d): ?>
-          <?php $stat = $dealStats[$d['id']]; $remain = $stat['total'] - $stat['paid']; $due = $nextDueByDeal[$d['id']] ?? null; ?>
+<?php if (!$deals): ?>
+  <div class="card"><div class="text-center text-muted py-5">Chưa có deal dài hạn nào.</div></div>
+<?php endif; ?>
+
+<?php
+$groupedDeals = [];
+foreach ($deals as $d) {
+    $zoneKey = $d['zone'] !== null && $d['zone'] !== '' ? $d['zone'] : 'Chưa phân khu vực';
+    $groupedDeals[$zoneKey][] = $d;
+}
+?>
+
+<?php foreach ($groupedDeals as $zoneName => $zoneDeals): ?>
+  <div class="deal-zone-banner"><?= e(mb_strtoupper($zoneName)) ?></div>
+  <div class="card mb-4">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead>
           <tr>
-            <td class="fw-semibold"><?= e($d['room_code']) ?><?= $d['zone'] ? '<div class="small text-muted">' . e($d['zone']) . '</div>' : '' ?></td>
-            <td><?= e($d['guest_name']) ?></td>
-            <td><?= vndate($d['checkin_date']) ?> - <?= vndate($d['checkout_date']) ?></td>
-            <td><?= $stat['count'] ?> kỳ</td>
-            <td class="text-end"><?= money($stat['total']) ?></td>
-            <td class="text-end text-success"><?= money($stat['paid']) ?></td>
-            <td class="text-end <?= $remain > 0 ? 'text-danger' : '' ?>"><?= money($remain) ?></td>
-            <td class="small"><?= $d['receiving_account'] ? e($d['receiving_account']) : '<span class="text-muted">—</span>' ?></td>
-            <td class="small">
-              <?php if (!$due): ?>
-                <span class="text-success"><i class="bi bi-check-circle"></i> Đã TT đủ</span>
-              <?php elseif ($due['status'] === 'overdue'): ?>
-                <span class="text-danger fw-semibold">Quá hạn <?= abs($due['days']) ?> ngày (kỳ <?= $due['period_index'] ?>)</span>
-              <?php elseif ($due['status'] === 'due_soon'): ?>
-                <span class="text-warning fw-semibold">Còn <?= $due['days'] ?> ngày (kỳ <?= $due['period_index'] ?>)</span>
-              <?php else: ?>
-                <span class="text-muted">Hạn <?= vndate($due['period_end']) ?> (kỳ <?= $due['period_index'] ?>)</span>
-              <?php endif; ?>
-            </td>
-            <td><span class="badge bg-<?= $d['status'] === 'active' ? 'primary' : ($d['status'] === 'ended' ? 'secondary' : 'danger') ?>"><?= e(DEAL_STATUS_LABELS[$d['status']] ?? $d['status']) ?></span></td>
-            <td class="text-end">
-              <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#periodModal<?= $d['id'] ?>"><i class="bi bi-eye"></i> Chi tiết</button>
-              <a href="<?= url('/deals/form.php?id=' . $d['id']) ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-            </td>
+            <th>Phòng</th>
+            <th>Khách</th>
+            <th>Thời hạn</th>
+            <th>Số kỳ</th>
+            <th class="text-end">Tổng cộng</th>
+            <th class="text-end">Đã thu</th>
+            <th class="text-end">Còn lại</th>
+            <th>TK nhận</th>
+            <th>Hạn thanh toán</th>
+            <th>Tình trạng</th>
+            <th class="text-end">Thao tác</th>
           </tr>
-        <?php endforeach; ?>
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          <?php foreach ($zoneDeals as $d): ?>
+            <?php $stat = $dealStats[$d['id']]; $remain = $stat['total'] - $stat['paid']; $due = $nextDueByDeal[$d['id']] ?? null; ?>
+            <tr>
+              <td class="fw-semibold"><?= e($d['room_code']) ?></td>
+              <td><?= e($d['guest_name']) ?></td>
+              <td><?= vndate($d['checkin_date']) ?> - <?= vndate($d['checkout_date']) ?></td>
+              <td><?= $stat['count'] ?> kỳ</td>
+              <td class="text-end"><?= money($stat['total']) ?></td>
+              <td class="text-end text-success"><?= money($stat['paid']) ?></td>
+              <td class="text-end <?= $remain > 0 ? 'text-danger' : '' ?>"><?= money($remain) ?></td>
+              <td class="small"><?= $d['receiving_account'] ? e($d['receiving_account']) : '<span class="text-muted">—</span>' ?></td>
+              <td class="small">
+                <?php if (!$due): ?>
+                  <span class="text-success"><i class="bi bi-check-circle"></i> Đã TT đủ</span>
+                <?php elseif ($due['status'] === 'overdue'): ?>
+                  <span class="text-danger fw-semibold">Quá hạn <?= abs($due['days']) ?> ngày (kỳ <?= $due['period_index'] ?>)</span>
+                <?php elseif ($due['status'] === 'due_soon'): ?>
+                  <span class="text-warning fw-semibold">Còn <?= $due['days'] ?> ngày (kỳ <?= $due['period_index'] ?>)</span>
+                <?php else: ?>
+                  <span class="text-muted">Hạn <?= vndate($due['period_end']) ?> (kỳ <?= $due['period_index'] ?>)</span>
+                <?php endif; ?>
+              </td>
+              <td><span class="badge bg-<?= $d['status'] === 'active' ? 'primary' : ($d['status'] === 'ended' ? 'secondary' : 'danger') ?>"><?= e(DEAL_STATUS_LABELS[$d['status']] ?? $d['status']) ?></span></td>
+              <td class="text-end">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#periodModal<?= $d['id'] ?>"><i class="bi bi-eye"></i> Chi tiết</button>
+                <a href="<?= url('/deals/form.php?id=' . $d['id']) ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
   </div>
-</div>
+<?php endforeach; ?>
 
 <?php foreach ($deals as $d): ?>
   <?php $periods = $periodsByDeal[$d['id']] ?? []; ?>

@@ -154,6 +154,19 @@ body {
 .card { border: 1px solid #eef0f2; border-radius: 12px; }
 .card-header { background: #fff; border-bottom: 1px solid #eef0f2; font-weight: 600; }
 
+/* Banner ten khu vuc to, dam, giua trang - dung phan cach danh sach theo tung khu (Doanh thu dai han...) */
+.deal-zone-banner {
+  background: var(--brand-dark);
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-align: center;
+  padding: 14px 16px;
+  border-radius: 10px;
+  margin: 22px 0 12px;
+}
+
 table.table thead { background: #f8f9fa; }
 .table > :not(caption) > * > * { vertical-align: middle; }
 
