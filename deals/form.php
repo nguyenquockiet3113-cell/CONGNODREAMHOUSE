@@ -120,6 +120,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             flash('success', 'Đã thêm deal mới (' . ($dealType === 'dai_han' ? 'Dài hạn' : 'Ngắn hạn') . ').');
+
+            if (($_POST['save_and_new'] ?? '0') === '1') {
+                redirect('/deals/form.php');
+            }
         }
 
         redirect($dealType === 'dai_han' ? '/deals/long.php' : '/deals/short.php');
@@ -142,6 +146,7 @@ require_once __DIR__ . '/../includes/header.php';
   <div class="card-body">
     <form method="post" id="dealForm">
       <?= csrf_field() ?>
+      <input type="hidden" name="save_and_new" id="save_and_new" value="0">
       <div class="row g-3">
         <div class="col-md-4">
           <label class="form-label">Ghi chú (Note)</label>
@@ -183,15 +188,6 @@ require_once __DIR__ . '/../includes/header.php';
           <label class="form-label">Đơn giá (đ) <span class="text-muted small">/đêm hoặc /kỳ 30 ngày</span></label>
           <input type="number" step="1000" name="price_per_unit" id="price_per_unit" class="form-control" value="<?= e($deal['price_per_unit']) ?>">
         </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Tiền cọc (đ)</label>
-          <input type="number" step="1000" name="deposit_amount" id="deposit_amount" class="form-control" value="<?= e($deal['deposit_amount']) ?>">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Ngày cọc</label>
-          <input type="date" name="deposit_date" class="form-control" value="<?= e($deal['deposit_date']) ?>">
-        </div>
         <div class="col-md-3">
           <label class="form-label">Phụ phí (Charge)</label>
           <input type="number" step="1000" name="extra_fee" id="extra_fee" class="form-control" value="<?= e($deal['extra_fee']) ?>">
@@ -200,41 +196,57 @@ require_once __DIR__ . '/../includes/header.php';
           <label class="form-label">Thành tiền tổng</label>
           <input type="text" id="totalDisplay" class="form-control" disabled>
         </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Hình thức thanh toán</label>
-          <select name="payment_method" class="form-select">
-            <option value="chuyen_khoan" <?= $deal['payment_method'] === 'chuyen_khoan' ? 'selected' : '' ?>>Chuyển khoản</option>
-            <option value="tien_mat" <?= $deal['payment_method'] === 'tien_mat' ? 'selected' : '' ?>>Tiền mặt</option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Tài khoản nhận</label>
-          <?php
-            $recvOptions = array_map(fn($ba) => trim($ba['bank_name'] . ($ba['account_number'] ? ' - ' . $ba['account_number'] : '')), $bankAccounts);
-            $recvCurrent = (string)$deal['receiving_account'];
-          ?>
-          <select name="receiving_account" class="form-select">
-            <option value="">-- Chưa chọn --</option>
-            <?php foreach ($recvOptions as $opt): ?>
-              <option value="<?= e($opt) ?>" <?= $recvCurrent === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
-            <?php endforeach; ?>
-            <?php if ($recvCurrent !== '' && !in_array($recvCurrent, $recvOptions, true)): ?>
-              <option value="<?= e($recvCurrent) ?>" selected><?= e($recvCurrent) ?></option>
-            <?php endif; ?>
-          </select>
-          <div class="form-text"><a href="<?= url('/bank_accounts/index.php') ?>" target="_blank">+ Quản lý danh sách tài khoản nhận</a></div>
-        </div>
         <div class="col-md-3">
           <label class="form-label">Đã CK/TM (đ)</label>
           <input type="text" class="form-control" disabled value="<?= money($deal['paid_amount']) ?>">
           <div class="form-text">Cộng dồn từ lịch sử thanh toán bên dưới, không nhập trực tiếp.</div>
         </div>
-        <div class="col-md-3 d-flex align-items-end">
-          <span class="badge bg-<?= $deal['payment_status'] === 'paid' ? 'success' : 'secondary' ?> py-2 px-3">
-            <?= $deal['payment_status'] === 'paid' ? 'Đã thanh toán đủ' : 'Chưa thanh toán đủ' ?>
-          </span>
+      </div>
+
+      <div class="mt-2">
+        <a href="#advancedFields" data-bs-toggle="collapse" class="small"><i class="bi bi-chevron-down"></i> Thêm chi tiết thanh toán (cọc, hình thức, tài khoản nhận)</a>
+        <div class="collapse<?= ($deal['deposit_amount'] || $deal['deposit_date'] || $deal['receiving_account']) ? ' show' : '' ?> mt-2" id="advancedFields">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Tiền cọc (đ)</label>
+              <input type="number" step="1000" name="deposit_amount" id="deposit_amount" class="form-control" value="<?= e($deal['deposit_amount']) ?>">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Ngày cọc</label>
+              <input type="date" name="deposit_date" class="form-control" value="<?= e($deal['deposit_date']) ?>">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Hình thức thanh toán</label>
+              <select name="payment_method" class="form-select">
+                <option value="chuyen_khoan" <?= $deal['payment_method'] === 'chuyen_khoan' ? 'selected' : '' ?>>Chuyển khoản</option>
+                <option value="tien_mat" <?= $deal['payment_method'] === 'tien_mat' ? 'selected' : '' ?>>Tiền mặt</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Tài khoản nhận</label>
+              <?php
+                $recvOptions = array_map(fn($ba) => trim($ba['bank_name'] . ($ba['account_number'] ? ' - ' . $ba['account_number'] : '')), $bankAccounts);
+                $recvCurrent = (string)$deal['receiving_account'];
+              ?>
+              <select name="receiving_account" class="form-select">
+                <option value="">-- Chưa chọn --</option>
+                <?php foreach ($recvOptions as $opt): ?>
+                  <option value="<?= e($opt) ?>" <?= $recvCurrent === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
+                <?php endforeach; ?>
+                <?php if ($recvCurrent !== '' && !in_array($recvCurrent, $recvOptions, true)): ?>
+                  <option value="<?= e($recvCurrent) ?>" selected><?= e($recvCurrent) ?></option>
+                <?php endif; ?>
+              </select>
+              <div class="form-text"><a href="<?= url('/bank_accounts/index.php') ?>" target="_blank">+ Quản lý danh sách tài khoản nhận</a></div>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <div class="mt-3">
+        <span class="badge bg-<?= $deal['payment_status'] === 'paid' ? 'success' : 'secondary' ?> py-2 px-3">
+          <?= $deal['payment_status'] === 'paid' ? 'Đã thanh toán đủ' : 'Chưa thanh toán đủ' ?>
+        </span>
       </div>
 
       <?php if ($periods): ?>
@@ -272,6 +284,9 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div class="mt-4 d-flex gap-2">
         <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Thêm / Cập nhật Deal</button>
+        <?php if (!$id): ?>
+          <button type="submit" id="saveAndNewBtn" class="btn btn-outline-success"><i class="bi bi-plus-circle"></i> Lưu &amp; Thêm mới</button>
+        <?php endif; ?>
         <a href="<?= url('/deals/short.php') ?>" class="btn btn-outline-secondary">Hủy</a>
       </div>
     </form>
@@ -348,15 +363,34 @@ require_once __DIR__ . '/../includes/header.php';
 
 <script>
 var roomMap = <?= json_encode(array_map(fn($r) => ['zone' => $r['zone'], 'bedrooms' => $r['bedrooms']], array_column($rooms, null, 'room_code'))) ?>;
+var lastPriceMap = <?= json_encode($lastPriceByRoom) ?>;
 function applyRoomInfo() {
-  var info = roomMap[document.getElementById('room_code').value];
+  var roomCode = document.getElementById('room_code').value;
+  var info = roomMap[roomCode];
   if (info) {
     if (info.zone) document.getElementById('zone').value = info.zone;
     if (info.bedrooms) document.getElementById('bedrooms').value = info.bedrooms;
   }
+  var priceInput = document.getElementById('price_per_unit');
+  if ((!priceInput.value || parseFloat(priceInput.value) === 0) && lastPriceMap[roomCode]) {
+    priceInput.value = lastPriceMap[roomCode];
+    recalc();
+  }
 }
 document.getElementById('room_code').addEventListener('input', applyRoomInfo);
 document.getElementById('room_code').addEventListener('change', applyRoomInfo);
+
+var saveAndNewBtn = document.getElementById('saveAndNewBtn');
+if (saveAndNewBtn) {
+  saveAndNewBtn.addEventListener('click', function () {
+    document.getElementById('save_and_new').value = '1';
+  });
+}
+document.getElementById('dealForm').addEventListener('submit', function (e) {
+  if (e.submitter && e.submitter.id !== 'saveAndNewBtn') {
+    document.getElementById('save_and_new').value = '0';
+  }
+});
 
 function fmt(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n)) + ' đ'; }
 
