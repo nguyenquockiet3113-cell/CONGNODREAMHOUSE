@@ -20,6 +20,7 @@ require_once __DIR__ . '/../includes/header.php';
   </h4>
   <div class="d-flex gap-2">
     <a href="<?= url('/contracts/print.php?id=' . $contract['id']) ?>" target="_blank" class="btn btn-outline-secondary"><i class="bi bi-printer"></i> In hợp đồng</a>
+    <a href="<?= url('/contracts/download_word.php?id=' . $contract['id']) ?>" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-word"></i> Tải Word</a>
     <a href="<?= url('/contracts/form.php?id=' . $contract['id']) ?>" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Sửa</a>
   </div>
 </div>

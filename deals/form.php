@@ -138,7 +138,15 @@ require_once __DIR__ . '/../includes/header.php';
     <form method="post" id="dealForm">
       <?= csrf_field() ?>
       <div class="row g-3">
-        <div class="col-md-3">
+        <div class="col-md-4">
+          <label class="form-label">Ghi chú (Note)</label>
+          <input type="text" name="note" class="form-control" value="<?= e($deal['note']) ?>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Tên Sale / Khách *</label>
+          <input type="text" name="guest_name" class="form-control" required value="<?= e($deal['guest_name']) ?>">
+        </div>
+        <div class="col-md-4">
           <label class="form-label">Mã phòng *</label>
           <input type="text" name="room_code" id="room_code" class="form-control" list="roomList" required value="<?= e($deal['room_code']) ?>">
           <datalist id="roomList">
@@ -149,13 +157,9 @@ require_once __DIR__ . '/../includes/header.php';
           <label class="form-label">Số PN</label>
           <input type="number" min="0" name="bedrooms" id="bedrooms" class="form-control" value="<?= e($deal['bedrooms']) ?>">
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
           <label class="form-label">Khu vực</label>
           <input type="text" name="zone" id="zone" class="form-control" value="<?= e($deal['zone']) ?>">
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Tên Sale / Khách *</label>
-          <input type="text" name="guest_name" class="form-control" required value="<?= e($deal['guest_name']) ?>">
         </div>
 
         <div class="col-md-3">
@@ -215,11 +219,6 @@ require_once __DIR__ . '/../includes/header.php';
           <span class="badge bg-<?= $deal['payment_status'] === 'paid' ? 'success' : 'secondary' ?> py-2 px-3">
             <?= $deal['payment_status'] === 'paid' ? 'Đã thanh toán đủ' : 'Chưa thanh toán đủ' ?>
           </span>
-        </div>
-
-        <div class="col-12">
-          <label class="form-label">Ghi chú (Note)</label>
-          <input type="text" name="note" class="form-control" value="<?= e($deal['note']) ?>">
         </div>
       </div>
 
@@ -334,13 +333,15 @@ require_once __DIR__ . '/../includes/header.php';
 
 <script>
 var roomMap = <?= json_encode(array_map(fn($r) => ['zone' => $r['zone'], 'bedrooms' => $r['bedrooms']], array_column($rooms, null, 'room_code'))) ?>;
-document.getElementById('room_code').addEventListener('change', function () {
-  var info = roomMap[this.value];
+function applyRoomInfo() {
+  var info = roomMap[document.getElementById('room_code').value];
   if (info) {
-    if (info.zone && !document.getElementById('zone').value) document.getElementById('zone').value = info.zone;
-    if (info.bedrooms && !document.getElementById('bedrooms').value) document.getElementById('bedrooms').value = info.bedrooms;
+    if (info.zone) document.getElementById('zone').value = info.zone;
+    if (info.bedrooms) document.getElementById('bedrooms').value = info.bedrooms;
   }
-});
+}
+document.getElementById('room_code').addEventListener('input', applyRoomInfo);
+document.getElementById('room_code').addEventListener('change', applyRoomInfo);
 
 function fmt(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n)) + ' đ'; }
 
