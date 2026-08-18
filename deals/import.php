@@ -90,8 +90,8 @@ require_once __DIR__ . '/../includes/header.php';
       File CSV cần có dòng tiêu đề (header) với các cột bắt buộc: <code>guest_name, room_code, checkin_date, checkout_date, price_per_unit</code>.
       Có thể thêm các cột tùy chọn: <code>bedrooms, extra_fee, note</code>. Ngày theo định dạng <code>YYYY-MM-DD</code>.
       Deal có từ 30 đêm trở lên sẽ tự động được phân loại Dài hạn và sinh kỳ thanh toán.
-      Dùng nút <a href="<?= url('/deals/export.php') ?>">Xuất CSV</a> ở trang Doanh thu ngắn hạn để lấy file mẫu đúng định dạng.
     </p>
+    <a href="<?= url('/deals/sample_template.php') ?>" class="btn btn-outline-secondary mb-3"><i class="bi bi-download"></i> Tải file mẫu (CSV)</a>
     <form method="post" enctype="multipart/form-data">
       <?= csrf_field() ?>
       <div class="mb-3">

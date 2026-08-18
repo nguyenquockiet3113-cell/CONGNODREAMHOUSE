@@ -9,9 +9,9 @@ header('Content-Disposition: attachment; filename="danh-sach-phong-' . date('Y-m
 
 $out = fopen('php://output', 'w');
 fwrite($out, "\xEF\xBB\xBF");
-fputcsv($out, ['room_code', 'zone', 'bedrooms']);
+csv_out($out, ['room_code', 'zone', 'bedrooms']);
 foreach ($rooms as $r) {
-    fputcsv($out, [$r['room_code'], $r['zone'], $r['bedrooms']]);
+    csv_out($out, [$r['room_code'], $r['zone'], $r['bedrooms']]);
 }
 fclose($out);
 exit;

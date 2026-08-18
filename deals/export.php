@@ -26,9 +26,9 @@ header('Content-Disposition: attachment; filename="doanh-thu-ngan-han-' . date('
 
 $out = fopen('php://output', 'w');
 fwrite($out, "\xEF\xBB\xBF"); // BOM de Excel doc dung UTF-8
-fputcsv($out, ['note', 'guest_name', 'room_code', 'bedrooms', 'nights', 'price_per_unit', 'checkin_date', 'checkout_date', 'extra_fee', 'total_amount', 'paid_amount', 'payment_status']);
+csv_out($out, ['note', 'guest_name', 'room_code', 'bedrooms', 'nights', 'price_per_unit', 'checkin_date', 'checkout_date', 'extra_fee', 'total_amount', 'paid_amount', 'payment_status']);
 foreach ($deals as $d) {
-    fputcsv($out, [
+    csv_out($out, [
         $d['note'], $d['guest_name'], $d['room_code'], $d['bedrooms'], $d['nights'], $d['price_per_unit'],
         $d['checkin_date'], $d['checkout_date'], $d['extra_fee'], $d['total_amount'], $d['paid_amount'], $d['payment_status'],
     ]);

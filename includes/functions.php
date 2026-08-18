@@ -110,6 +110,12 @@ const EXPENSE_CATEGORIES = [
     'Thuế - Mặt bằng', 'Lương', 'Sửa chữa', 'Rác', 'Vật tư', 'Khác',
 ];
 
+/** Ghi 1 dong CSV, tuong thich PHP 8.4+ (bat buoc truyen $escape de tranh canh bao deprecated). */
+function csv_out($handle, array $fields): void
+{
+    fputcsv($handle, $fields, ',', '"', '\\');
+}
+
 function get_setting(PDO $pdo, string $key, string $default = ''): string
 {
     $stmt = $pdo->prepare('SELECT setting_value FROM settings WHERE setting_key = ?');

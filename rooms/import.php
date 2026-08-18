@@ -75,8 +75,8 @@ require_once __DIR__ . '/../includes/header.php';
     <p class="small text-muted">
       File CSV cần có dòng tiêu đề (header) với cột bắt buộc: <code>room_code</code>. Có thể thêm cột tùy chọn: <code>zone, bedrooms</code>.
       Phòng có mã trùng với phòng đã có sẽ được <strong>cập nhật</strong> (khu vực, số phòng ngủ), mã chưa có sẽ được <strong>thêm mới</strong>.
-      Dùng nút <a href="<?= url('/rooms/export.php') ?>">Xuất CSV</a> ở trang Khu &amp; Phòng để lấy file mẫu đúng định dạng.
     </p>
+    <a href="<?= url('/rooms/sample_template.php') ?>" class="btn btn-outline-secondary mb-3"><i class="bi bi-download"></i> Tải file mẫu (CSV)</a>
     <form method="post" enctype="multipart/form-data">
       <?= csrf_field() ?>
       <div class="mb-3">
