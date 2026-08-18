@@ -217,7 +217,11 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="modal-body">
           <table class="table table-sm mb-0">
             <thead>
-              <tr><th>Kỳ</th><th>Từ - đến</th><th class="text-end">Thuê</th><th class="text-end">Cọc</th><th class="text-end">Điện/Nước</th><th class="text-end">Đã TT</th><th class="text-end">Còn lại</th></tr>
+              <tr>
+                <th>Kỳ</th><th>Từ - đến</th><th class="text-end">Thuê</th><th class="text-end">Cọc</th>
+                <th class="text-end">Điện</th><th class="text-end">Nước</th><th class="text-end">Phí QL</th><th class="text-end">Phí khác</th>
+                <th class="text-end">Tổng cần TT</th><th class="text-end">Đã TT</th><th class="text-end">Còn lại</th><th></th>
+              </tr>
             </thead>
             <tbody>
               <?php foreach ($periods as $p): ?>
@@ -227,9 +231,14 @@ require_once __DIR__ . '/../includes/header.php';
                   <td><?= vndate($p['period_start']) ?> - <?= vndate($p['period_end']) ?></td>
                   <td class="text-end"><?= money($p['rent_amount']) ?></td>
                   <td class="text-end"><?= $p['deposit_amount'] > 0 ? money($p['deposit_amount']) : '' ?></td>
-                  <td class="text-end"><?= money($p['utilities_amount']) ?></td>
+                  <td class="text-end"><?= money($p['electricity_amount'] ?? 0) ?></td>
+                  <td class="text-end"><?= money($p['water_amount'] ?? 0) ?></td>
+                  <td class="text-end"><?= money($p['management_fee_amount'] ?? 0) ?></td>
+                  <td class="text-end"><?= money($p['other_fee_amount'] ?? 0) ?></td>
+                  <td class="text-end fw-semibold"><?= money($pt) ?></td>
                   <td class="text-end text-success"><?= money($p['paid_amount']) ?></td>
                   <td class="text-end <?= $pr > 0 ? 'text-danger' : '' ?>"><?= money($pr) ?></td>
+                  <td class="text-end"><a href="<?= url('/deals/bill.php?deal_id=' . $d['id'] . '&period_id=' . $p['id']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary" title="Xem/in bill"><i class="bi bi-printer"></i></a></td>
                 </tr>
               <?php endforeach; ?>
             </tbody>

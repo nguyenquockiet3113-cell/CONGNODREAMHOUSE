@@ -134,7 +134,11 @@ CREATE TABLE IF NOT EXISTS deal_periods (
     period_end DATE NOT NULL,
     rent_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     deposit_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
-    utilities_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    electricity_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    water_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    management_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    other_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    utilities_amount DECIMAL(14,0) NOT NULL DEFAULT 0, -- = dien+nuoc+phi_ql+phi_khac (tu dong tinh lai khi luu)
     paid_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     reconciled TINYINT(1) NOT NULL DEFAULT 0,
     note VARCHAR(255) DEFAULT NULL,

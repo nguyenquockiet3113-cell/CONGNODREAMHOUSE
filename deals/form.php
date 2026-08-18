@@ -93,14 +93,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Cap nhat cac ky da co (khong tu sinh lai de khong mat du lieu da nhap)
             $periodIds = $_POST['period_id'] ?? [];
             foreach ($periodIds as $i => $pid) {
-                $pdo->prepare('UPDATE deal_periods SET rent_amount=?, deposit_amount=?, utilities_amount=?, paid_amount=? WHERE id=? AND deal_id=?')
-                    ->execute([
-                        (float)($_POST['period_rent'][$i] ?? 0),
-                        (float)($_POST['period_deposit'][$i] ?? 0),
-                        (float)($_POST['period_utilities'][$i] ?? 0),
-                        (float)($_POST['period_paid'][$i] ?? 0),
-                        (int)$pid, $id,
-                    ]);
+                $electricity = (float)($_POST['period_electricity'][$i] ?? 0);
+                $water = (float)($_POST['period_water'][$i] ?? 0);
+                $management = (float)($_POST['period_management'][$i] ?? 0);
+                $other = (float)($_POST['period_other'][$i] ?? 0);
+                $pdo->prepare(
+                    'UPDATE deal_periods SET rent_amount=?, deposit_amount=?, electricity_amount=?, water_amount=?, management_fee_amount=?, other_fee_amount=?, utilities_amount=?, paid_amount=?, note=? WHERE id=? AND deal_id=?'
+                )->execute([
+                    (float)($_POST['period_rent'][$i] ?? 0),
+                    (float)($_POST['period_deposit'][$i] ?? 0),
+                    $electricity, $water, $management, $other,
+                    $electricity + $water + $management + $other,
+                    (float)($_POST['period_paid'][$i] ?? 0),
+                    trim($_POST['period_note'][$i] ?? ''),
+                    (int)$pid, $id,
+                ]);
             }
 
             // Neu chuyen thanh dai han va chua tung co ky nao -> sinh ky lan dau
@@ -264,31 +271,48 @@ require_once __DIR__ . '/../includes/header.php';
       <?php if ($periods): ?>
         <hr>
         <div class="fw-semibold mb-2">Chi tiết công nợ theo từng kỳ (quy ước vòng đời 30 ngày)</div>
-        <?php foreach ($periods as $i => $p): ?>
-          <div class="row g-2 align-items-end mb-2 p-2 border rounded">
-            <input type="hidden" name="period_id[]" value="<?= $p['id'] ?>">
-            <div class="col-md-3">
-              <div class="small text-muted"><?= e(deal_period_label($p['period_index'], $p['period_start'])) ?></div>
-              <div class="small">Từ <?= vndate($p['period_start']) ?> đến <?= vndate($p['period_end']) ?></div>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label small mb-1">Thuê</label>
-              <input type="number" step="1000" name="period_rent[]" class="form-control form-control-sm" value="<?= e($p['rent_amount']) ?>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label small mb-1">Cọc</label>
-              <input type="number" step="1000" name="period_deposit[]" class="form-control form-control-sm" value="<?= e($p['deposit_amount']) ?>">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label small mb-1">Điện/Nước</label>
-              <input type="number" step="1000" name="period_utilities[]" class="form-control form-control-sm" value="<?= e($p['utilities_amount']) ?>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label small mb-1">Đã thanh toán thực tế</label>
-              <input type="number" step="1000" name="period_paid[]" class="form-control form-control-sm" value="<?= e($p['paid_amount']) ?>">
-            </div>
-          </div>
-        <?php endforeach; ?>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle" id="periodsTable">
+            <thead>
+              <tr>
+                <th style="min-width:150px;">Kỳ</th>
+                <th style="width:110px;">Thuê</th>
+                <th style="width:110px;">Cọc</th>
+                <th style="width:100px;">Điện</th>
+                <th style="width:100px;">Nước</th>
+                <th style="width:100px;">Phí QL</th>
+                <th style="width:100px;">Phí khác</th>
+                <th style="width:120px;" class="text-end">Tổng cần TT</th>
+                <th style="width:110px;">Đã TT</th>
+                <th style="width:120px;" class="text-end">Còn lại</th>
+                <th style="min-width:120px;">Note</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($periods as $i => $p): ?>
+                <tr class="period-row">
+                  <td>
+                    <input type="hidden" name="period_id[]" value="<?= $p['id'] ?>">
+                    <div class="small text-muted"><?= e(deal_period_label($p['period_index'], $p['period_start'])) ?></div>
+                    <div class="small">Từ <?= vndate($p['period_start']) ?> đến <?= vndate($p['period_end']) ?></div>
+                  </td>
+                  <td><input type="number" step="1000" name="period_rent[]" class="form-control form-control-sm p-rent" value="<?= e($p['rent_amount']) ?>"></td>
+                  <td><input type="number" step="1000" name="period_deposit[]" class="form-control form-control-sm p-deposit" value="<?= e($p['deposit_amount']) ?>"></td>
+                  <td><input type="number" step="1000" name="period_electricity[]" class="form-control form-control-sm p-fee" value="<?= e($p['electricity_amount'] ?? 0) ?>"></td>
+                  <td><input type="number" step="1000" name="period_water[]" class="form-control form-control-sm p-fee" value="<?= e($p['water_amount'] ?? 0) ?>"></td>
+                  <td><input type="number" step="1000" name="period_management[]" class="form-control form-control-sm p-fee" value="<?= e($p['management_fee_amount'] ?? 0) ?>"></td>
+                  <td><input type="number" step="1000" name="period_other[]" class="form-control form-control-sm p-fee" value="<?= e($p['other_fee_amount'] ?? 0) ?>"></td>
+                  <td class="text-end fw-semibold p-total">0 đ</td>
+                  <td><input type="number" step="1000" name="period_paid[]" class="form-control form-control-sm p-paid" value="<?= e($p['paid_amount']) ?>"></td>
+                  <td class="text-end p-remain">0 đ</td>
+                  <td><input type="text" name="period_note[]" class="form-control form-control-sm" value="<?= e($p['note'] ?? '') ?>" placeholder="VD: gồm internet, xe..."></td>
+                  <td><a href="<?= url('/deals/bill.php?deal_id=' . $id . '&period_id=' . $p['id']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary" title="Xem/in bill"><i class="bi bi-printer"></i></a></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       <?php elseif ($id && $typePreview === 'dai_han'): ?>
         <hr>
         <div class="alert alert-info small mb-0">Lưu lại để hệ thống tự sinh các kỳ thanh toán 30 ngày cho deal dài hạn này.</div>
@@ -374,6 +398,29 @@ require_once __DIR__ . '/../includes/header.php';
 <?php endif; ?>
 
 <script>
+var periodsTableBody = document.querySelector('#periodsTable tbody');
+function fmtVnd(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n)) + ' đ'; }
+function recalcPeriodRow(row) {
+  var val = function (cls) { return parseFloat(row.querySelector('.' + cls) ? row.querySelector('.' + cls).value : 0) || 0; };
+  var rent = val('p-rent'), deposit = val('p-deposit');
+  var fees = 0;
+  row.querySelectorAll('.p-fee').forEach(function (inp) { fees += parseFloat(inp.value) || 0; });
+  var paid = val('p-paid');
+  var total = rent + deposit + fees;
+  row.querySelector('.p-total').textContent = fmtVnd(total);
+  var remainCell = row.querySelector('.p-remain');
+  var remain = total - paid;
+  remainCell.textContent = fmtVnd(remain);
+  remainCell.classList.toggle('text-danger', remain > 0);
+}
+if (periodsTableBody) {
+  periodsTableBody.querySelectorAll('.period-row').forEach(recalcPeriodRow);
+  periodsTableBody.addEventListener('input', function (e) {
+    var row = e.target.closest('.period-row');
+    if (row) recalcPeriodRow(row);
+  });
+}
+
 var roomMap = <?= json_encode(array_map(fn($r) => ['zone' => $r['zone'], 'bedrooms' => $r['bedrooms']], array_column($rooms, null, 'room_code'))) ?>;
 var lastPriceMap = <?= json_encode($lastPriceByRoom) ?>;
 function applyRoomInfo() {

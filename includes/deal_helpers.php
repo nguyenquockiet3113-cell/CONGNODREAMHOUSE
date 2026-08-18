@@ -55,7 +55,7 @@ function generate_deal_periods(PDO $pdo, int $dealId, string $checkin, string $c
         $rentAmount = $periodDays >= DEAL_PERIOD_DAYS ? $pricePerUnit : round($pricePerUnit * $periodDays / DEAL_PERIOD_DAYS);
 
         $pdo->prepare(
-            'INSERT INTO deal_periods (deal_id, period_index, period_start, period_end, rent_amount, deposit_amount, utilities_amount, paid_amount) VALUES (?,?,?,?,?,?,0,0)'
+            'INSERT INTO deal_periods (deal_id, period_index, period_start, period_end, rent_amount, deposit_amount, electricity_amount, water_amount, management_fee_amount, other_fee_amount, utilities_amount, paid_amount) VALUES (?,?,?,?,?,?,0,0,0,0,0,0)'
         )->execute([$dealId, $index, $current, $periodEndInclusive, $rentAmount, $index === 1 ? $deposit : 0]);
 
         $current = $periodEnd;
