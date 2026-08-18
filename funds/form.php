@@ -5,6 +5,7 @@ require_login();
 $id = (int)($_GET['id'] ?? 0);
 $entry = [
     'id' => 0, 'fund_type' => $_GET['type'] ?? 'cash', 'bank_account_id' => (int)($_GET['bank_id'] ?? 0),
+    'fund_id' => (int)($_GET['fund_id'] ?? 0),
     'tx_date' => date('Y-m-d'), 'zone' => '', 'content' => '', 'amount_in' => '', 'amount_out' => '',
     'note' => '', 'is_closing' => 0, 'attachment_path' => '',
 ];
@@ -22,11 +23,13 @@ if ($id) {
 }
 
 $bankAccounts = $pdo->query('SELECT * FROM bank_accounts ORDER BY bank_name')->fetchAll();
+$customFunds = $pdo->query('SELECT * FROM funds ORDER BY name')->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $entry['fund_type'] = $_POST['fund_type'] ?? 'cash';
     $entry['bank_account_id'] = $entry['fund_type'] === 'bank' ? (int)($_POST['bank_account_id'] ?? 0) : null;
+    $entry['fund_id'] = $entry['fund_type'] === 'custom' ? (int)($_POST['fund_id'] ?? 0) : null;
     $entry['tx_date'] = $_POST['tx_date'] ?? '';
     $entry['zone'] = trim($_POST['zone'] ?? '');
     $entry['content'] = trim($_POST['content'] ?? '');
@@ -35,8 +38,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $entry['note'] = trim($_POST['note'] ?? '');
     $entry['is_closing'] = isset($_POST['is_closing']) ? 1 : 0;
 
-    if (!in_array($entry['fund_type'], ['cash', 'bank', 'company'], true)) $errors[] = 'Loại quỹ không hợp lệ.';
+    if (!in_array($entry['fund_type'], ['cash', 'bank', 'company', 'custom'], true)) $errors[] = 'Loại quỹ không hợp lệ.';
     if ($entry['fund_type'] === 'bank' && !$entry['bank_account_id']) $errors[] = 'Vui lòng chọn tài khoản ngân hàng.';
+    if ($entry['fund_type'] === 'custom' && !$entry['fund_id']) $errors[] = 'Vui lòng chọn sổ quỹ.';
     if (!$entry['tx_date']) $errors[] = 'Vui lòng chọn ngày.';
     if ($entry['content'] === '') $errors[] = 'Vui lòng nhập nội dung.';
     if ($entry['amount_in'] <= 0 && $entry['amount_out'] <= 0 && !$entry['is_closing']) {
@@ -70,24 +74,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $now = date('Y-m-d H:i:s');
         if ($id) {
             $stmt = $pdo->prepare(
-                'UPDATE fund_ledger SET fund_type=?, bank_account_id=?, tx_date=?, zone=?, content=?, amount_in=?, amount_out=?, note=?, is_closing=?, attachment_path=? WHERE id=?'
+                'UPDATE fund_ledger SET fund_type=?, bank_account_id=?, fund_id=?, tx_date=?, zone=?, content=?, amount_in=?, amount_out=?, note=?, is_closing=?, attachment_path=? WHERE id=?'
             );
             $stmt->execute([
-                $entry['fund_type'], $entry['bank_account_id'], $entry['tx_date'], $entry['zone'], $entry['content'],
+                $entry['fund_type'], $entry['bank_account_id'], $entry['fund_id'], $entry['tx_date'], $entry['zone'], $entry['content'],
                 $entry['amount_in'], $entry['amount_out'], $entry['note'], $entry['is_closing'], $attachmentPath, $id,
             ]);
             flash('success', 'Đã cập nhật giao dịch.');
         } else {
             $stmt = $pdo->prepare(
-                'INSERT INTO fund_ledger (fund_type, bank_account_id, tx_date, zone, content, amount_in, amount_out, note, is_closing, attachment_path, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
+                'INSERT INTO fund_ledger (fund_type, bank_account_id, fund_id, tx_date, zone, content, amount_in, amount_out, note, is_closing, attachment_path, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
             );
             $stmt->execute([
-                $entry['fund_type'], $entry['bank_account_id'], $entry['tx_date'], $entry['zone'], $entry['content'],
+                $entry['fund_type'], $entry['bank_account_id'], $entry['fund_id'], $entry['tx_date'], $entry['zone'], $entry['content'],
                 $entry['amount_in'], $entry['amount_out'], $entry['note'], $entry['is_closing'], $attachmentPath, $now,
             ]);
             flash('success', 'Đã thêm giao dịch.');
         }
-        redirect('/funds/index.php?type=' . $entry['fund_type'] . '&bank_id=' . $entry['bank_account_id']);
+        redirect('/funds/index.php?type=' . $entry['fund_type'] . '&bank_id=' . $entry['bank_account_id'] . '&fund_id=' . $entry['fund_id']);
     }
 }
 
@@ -111,6 +115,7 @@ require_once __DIR__ . '/../includes/header.php';
             <option value="cash" <?= $entry['fund_type'] === 'cash' ? 'selected' : '' ?>>Tiền mặt</option>
             <option value="bank" <?= $entry['fund_type'] === 'bank' ? 'selected' : '' ?>>Quỹ ngân hàng</option>
             <option value="company" <?= $entry['fund_type'] === 'company' ? 'selected' : '' ?>>Quỹ công ty</option>
+            <option value="custom" <?= $entry['fund_type'] === 'custom' ? 'selected' : '' ?>>Sổ quỹ tùy chỉnh</option>
           </select>
         </div>
         <div class="col-md-4" id="bankWrap" style="<?= $entry['fund_type'] === 'bank' ? '' : 'display:none;' ?>">
@@ -121,6 +126,18 @@ require_once __DIR__ . '/../includes/header.php';
               <option value="<?= $ba['id'] ?>" <?= (int)$entry['bank_account_id'] === (int)$ba['id'] ? 'selected' : '' ?>><?= e($ba['bank_name']) ?><?= $ba['account_number'] ? ' - ' . e($ba['account_number']) : '' ?></option>
             <?php endforeach; ?>
           </select>
+        </div>
+        <div class="col-md-4" id="customWrap" style="<?= $entry['fund_type'] === 'custom' ? '' : 'display:none;' ?>">
+          <label class="form-label">Chọn sổ quỹ</label>
+          <select name="fund_id" class="form-select">
+            <option value="">-- Chọn --</option>
+            <?php foreach ($customFunds as $cf): ?>
+              <option value="<?= $cf['id'] ?>" <?= (int)$entry['fund_id'] === (int)$cf['id'] ? 'selected' : '' ?>><?= e($cf['name']) ?></option>
+            <?php endforeach; ?>
+          </select>
+          <?php if (!$customFunds): ?>
+            <div class="form-text">Chưa có sổ quỹ tùy chỉnh. <a href="<?= url('/funds/manage.php') ?>">Thêm mới</a>.</div>
+          <?php endif; ?>
         </div>
         <div class="col-md-4">
           <label class="form-label">Ngày *</label>
@@ -174,6 +191,7 @@ require_once __DIR__ . '/../includes/header.php';
 <script>
 document.getElementById('fund_type').addEventListener('change', function () {
   document.getElementById('bankWrap').style.display = this.value === 'bank' ? '' : 'none';
+  document.getElementById('customWrap').style.display = this.value === 'custom' ? '' : 'none';
 });
 </script>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

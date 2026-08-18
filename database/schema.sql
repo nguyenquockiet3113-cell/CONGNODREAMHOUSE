@@ -203,12 +203,23 @@ CREATE TABLE IF NOT EXISTS cleaning_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
--- So quy: Tien mat / Quy ngan hang (theo tung TK) / Quy cong ty
+-- Danh sach cac quy tuy chinh do nguoi dung tu dat ten them
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS funds (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(150) NOT NULL UNIQUE,
+    note VARCHAR(255) DEFAULT NULL,
+    created_at DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
+-- So quy: Tien mat / Quy ngan hang (theo tung TK) / Quy cong ty / Quy tuy chinh
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS fund_ledger (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    fund_type VARCHAR(20) NOT NULL, -- cash | bank | company
+    fund_type VARCHAR(20) NOT NULL, -- cash | bank | company | custom
     bank_account_id INT DEFAULT NULL, -- chi dung khi fund_type = bank
+    fund_id INT DEFAULT NULL, -- chi dung khi fund_type = custom
     tx_date DATE NOT NULL,
     zone VARCHAR(150) DEFAULT NULL,
     content VARCHAR(255) NOT NULL,
@@ -218,7 +229,8 @@ CREATE TABLE IF NOT EXISTS fund_ledger (
     is_closing TINYINT(1) NOT NULL DEFAULT 0, -- dong "CHOT QUY"
     attachment_path VARCHAR(255) DEFAULT NULL,
     created_at DATETIME NOT NULL,
-    CONSTRAINT fk_fund_bank FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL
+    CONSTRAINT fk_fund_bank FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL,
+    CONSTRAINT fk_fund_custom FOREIGN KEY (fund_id) REFERENCES funds(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------

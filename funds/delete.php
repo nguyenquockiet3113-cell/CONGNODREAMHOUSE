@@ -9,8 +9,9 @@ verify_csrf();
 $id = (int)($_POST['id'] ?? 0);
 $type = $_POST['type'] ?? 'cash';
 $bankId = (int)($_POST['bank_id'] ?? 0);
+$fundId = (int)($_POST['fund_id'] ?? 0);
 
 $pdo->prepare('DELETE FROM fund_ledger WHERE id = ?')->execute([$id]);
 flash('success', 'Đã xóa giao dịch.');
 
-redirect('/funds/index.php?type=' . $type . '&bank_id=' . $bankId);
+redirect('/funds/index.php?type=' . $type . '&bank_id=' . $bankId . '&fund_id=' . $fundId);

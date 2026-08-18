@@ -167,10 +167,18 @@ CREATE TABLE IF NOT EXISTS cleaning_logs (
     created_at DATETIME NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS funds (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(150) NOT NULL UNIQUE,
+    note VARCHAR(255),
+    created_at DATETIME NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS fund_ledger (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     fund_type VARCHAR(20) NOT NULL,
     bank_account_id INTEGER,
+    fund_id INTEGER,
     tx_date DATE NOT NULL,
     zone VARCHAR(150),
     content VARCHAR(255) NOT NULL,
@@ -180,7 +188,8 @@ CREATE TABLE IF NOT EXISTS fund_ledger (
     is_closing TINYINT NOT NULL DEFAULT 0,
     attachment_path VARCHAR(255),
     created_at DATETIME NOT NULL,
-    FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL
+    FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL,
+    FOREIGN KEY (fund_id) REFERENCES funds(id)
 );
 
 CREATE TABLE IF NOT EXISTS reminders (
