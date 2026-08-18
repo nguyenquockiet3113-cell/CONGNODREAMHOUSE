@@ -230,6 +230,22 @@ rowsBody.addEventListener('change', function (e) {
   if (!row) return;
   computeRowPrice(row);
 });
+
+// Nhap ma phong xong an Enter -> nhay xuong dong tiep theo (tu them dong moi neu dang o dong cuoi)
+rowsBody.addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter' || !e.target.classList.contains('room-code-input')) return;
+  e.preventDefault();
+  var row = e.target.closest('.work-row');
+  var rows = Array.from(rowsBody.querySelectorAll('.work-row'));
+  var idx = rows.indexOf(row);
+  var nextRow = rows[idx + 1];
+  if (!nextRow) {
+    addRow();
+    rows = rowsBody.querySelectorAll('.work-row');
+    nextRow = rows[rows.length - 1];
+  }
+  nextRow.querySelector('.room-code-input').focus();
+});
 rowsBody.addEventListener('click', function (e) {
   var btn = e.target.closest('.remove-row-btn');
   if (btn) {
