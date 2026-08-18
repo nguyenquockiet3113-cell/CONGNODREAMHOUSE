@@ -33,11 +33,11 @@ foreach ($rows as $r) {
     $sumSettle += (float)$r['settle_amount'];
 }
 
-$pageTitle = 'Chi phí dài hạn';
+$pageTitle = 'Chi phí khác';
 require_once __DIR__ . '/../includes/header.php';
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-  <h4 class="mb-0"><i class="bi bi-journal-text"></i> Chi phí dài hạn</h4>
+  <h4 class="mb-0"><i class="bi bi-journal-text"></i> Chi phí khác</h4>
   <div class="d-flex gap-2">
     <a href="<?= url('/billing/add.php') ?>" class="btn btn-success"><i class="bi bi-plus-lg"></i> Thêm giao dịch</a>
   </div>
