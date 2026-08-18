@@ -454,10 +454,26 @@ require_once __DIR__ . '/../includes/header.php';
       <div class="text-muted small mb-3">Chưa có lần thanh toán nào.</div>
     <?php else: ?>
       <table class="table table-sm mb-3 align-middle">
-        <thead><tr><th style="width:160px;">Ngày</th><th style="width:150px;">Số tiền</th><th style="width:150px;">Hình thức</th><th style="width:220px;">TK nhận</th><th>Ghi chú</th><th class="text-end" style="width:110px;"></th></tr></thead>
+        <thead><tr><th>Ngày</th><th>Số tiền</th><th>Hình thức</th><th>TK nhận</th><th>Ghi chú</th><th></th></tr></thead>
         <tbody>
           <?php foreach ($payments as $p): ?>
-            <tr>
+            <tr id="payment-view-<?= $p['id'] ?>">
+              <td><?= vndate($p['payment_date']) ?></td>
+              <td class="fw-semibold"><?= money($p['amount']) ?></td>
+              <td><?= $p['method'] === 'tien_mat' ? 'Tiền mặt' : 'Chuyển khoản' ?></td>
+              <td class="small"><?= $p['receiving_account'] ? e($p['receiving_account']) : '<span class="text-muted">—</span>' ?></td>
+              <td class="small"><?= e($p['note']) ?></td>
+              <td class="text-end">
+                <button type="button" class="btn btn-sm btn-outline-secondary payment-edit-toggle" data-target="payment-edit-<?= $p['id'] ?>" data-view="payment-view-<?= $p['id'] ?>" title="Sửa"><i class="bi bi-pencil"></i></button>
+                <form method="post" action="<?= url('/deals/delete_payment.php') ?>" class="d-inline" data-confirm="Xóa lần thanh toán này?">
+                  <?= csrf_field() ?>
+                  <input type="hidden" name="payment_id" value="<?= $p['id'] ?>">
+                  <input type="hidden" name="deal_id" value="<?= $id ?>">
+                  <button class="btn btn-sm btn-outline-danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            <tr id="payment-edit-<?= $p['id'] ?>" style="display:none;">
               <td colspan="6" class="p-0">
                 <form method="post" action="<?= url('/deals/update_payment.php') ?>" class="d-flex align-items-center gap-2 px-2 py-1">
                   <?= csrf_field() ?>
@@ -480,13 +496,27 @@ require_once __DIR__ . '/../includes/header.php';
                   </select>
                   <input type="text" name="note" class="form-control form-control-sm flex-grow-1" value="<?= e($p['note']) ?>">
                   <button type="submit" class="btn btn-sm btn-outline-success" title="Lưu"><i class="bi bi-check-lg"></i></button>
-                  <button type="submit" formaction="<?= url('/deals/delete_payment.php') ?>" formnovalidate class="btn btn-sm btn-outline-danger" onclick="return confirm('Xóa lần thanh toán này?')" title="Xóa"><i class="bi bi-trash"></i></button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary payment-edit-cancel" data-target="payment-edit-<?= $p['id'] ?>" data-view="payment-view-<?= $p['id'] ?>" title="Hủy"><i class="bi bi-x-lg"></i></button>
                 </form>
               </td>
             </tr>
           <?php endforeach; ?>
         </tbody>
       </table>
+      <script>
+      document.querySelectorAll('.payment-edit-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.getElementById(this.dataset.view).style.display = 'none';
+          document.getElementById(this.dataset.target).style.display = '';
+        });
+      });
+      document.querySelectorAll('.payment-edit-cancel').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.getElementById(this.dataset.target).style.display = 'none';
+          document.getElementById(this.dataset.view).style.display = '';
+        });
+      });
+      </script>
     <?php endif; ?>
 
     <form method="post" action="<?= url('/deals/add_payment.php') ?>" class="row g-2 align-items-end">
