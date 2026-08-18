@@ -3,7 +3,7 @@ require_once __DIR__ . '/../config/config.php';
 require_admin();
 
 $id = (int)($_GET['id'] ?? 0);
-$user = ['id' => 0, 'full_name' => '', 'username' => '', 'role' => 'staff', 'is_active' => 1];
+$user = ['id' => 0, 'full_name' => '', 'username' => '', 'role' => 'staff', 'is_active' => 1, 'permissions' => ''];
 $errors = [];
 
 if ($id) {
@@ -23,6 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user['username'] = trim($_POST['username'] ?? '');
     $user['role'] = $_POST['role'] ?? 'staff';
     $user['is_active'] = isset($_POST['is_active']) ? 1 : 0;
+    $selectedModules = array_intersect($_POST['permissions'] ?? [], array_keys(APP_MODULES));
+    $user['permissions'] = implode(',', $selectedModules);
     $password = $_POST['password'] ?? '';
 
     if ($user['full_name'] === '') $errors[] = 'Vui lòng nhập họ tên.';
@@ -40,17 +42,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$errors) {
         if ($id) {
             if ($password !== '') {
-                $stmt = $pdo->prepare('UPDATE users SET full_name=?, username=?, role=?, is_active=?, password_hash=? WHERE id=?');
-                $stmt->execute([$user['full_name'], $user['username'], $user['role'], $user['is_active'], password_hash($password, PASSWORD_DEFAULT), $id]);
+                $stmt = $pdo->prepare('UPDATE users SET full_name=?, username=?, role=?, permissions=?, is_active=?, password_hash=? WHERE id=?');
+                $stmt->execute([$user['full_name'], $user['username'], $user['role'], $user['permissions'], $user['is_active'], password_hash($password, PASSWORD_DEFAULT), $id]);
             } else {
-                $stmt = $pdo->prepare('UPDATE users SET full_name=?, username=?, role=?, is_active=? WHERE id=?');
-                $stmt->execute([$user['full_name'], $user['username'], $user['role'], $user['is_active'], $id]);
+                $stmt = $pdo->prepare('UPDATE users SET full_name=?, username=?, role=?, permissions=?, is_active=? WHERE id=?');
+                $stmt->execute([$user['full_name'], $user['username'], $user['role'], $user['permissions'], $user['is_active'], $id]);
             }
             flash('success', 'Đã cập nhật tài khoản.');
         } else {
             $now = date('Y-m-d H:i:s');
-            $stmt = $pdo->prepare('INSERT INTO users (full_name, username, password_hash, role, is_active, created_at) VALUES (?,?,?,?,?,?)');
-            $stmt->execute([$user['full_name'], $user['username'], password_hash($password, PASSWORD_DEFAULT), $user['role'], $user['is_active'], $now]);
+            $stmt = $pdo->prepare('INSERT INTO users (full_name, username, password_hash, role, permissions, is_active, created_at) VALUES (?,?,?,?,?,?,?)');
+            $stmt->execute([$user['full_name'], $user['username'], password_hash($password, PASSWORD_DEFAULT), $user['role'], $user['permissions'], $user['is_active'], $now]);
             flash('success', 'Đã thêm tài khoản mới.');
         }
         redirect('/users/index.php');
@@ -97,6 +99,23 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
         </div>
       </div>
+
+      <?php $selectedPerms = array_filter(explode(',', $user['permissions'])); ?>
+      <div id="permissionsBlock" class="mt-4" style="<?= $user['role'] === 'admin' ? 'display:none;' : '' ?>">
+        <label class="form-label fw-semibold">Quyền truy cập từng mục (chỉ áp dụng cho Nhân viên)</label>
+        <div class="form-text mb-2">Bỏ trống mục nào thì tài khoản này sẽ không nhìn thấy và không truy cập được mục đó.</div>
+        <div class="row g-2">
+          <?php foreach (APP_MODULES as $key => $label): ?>
+            <div class="col-md-4">
+              <div class="form-check">
+                <input type="checkbox" name="permissions[]" value="<?= e($key) ?>" id="perm_<?= e($key) ?>" class="form-check-input" <?= in_array($key, $selectedPerms, true) ? 'checked' : '' ?>>
+                <label class="form-check-label" for="perm_<?= e($key) ?>"><?= e($label) ?></label>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+
       <div class="mt-4 d-flex gap-2">
         <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Lưu</button>
         <a href="<?= url('/users/index.php') ?>" class="btn btn-outline-secondary">Hủy</a>
@@ -104,4 +123,10 @@ require_once __DIR__ . '/../includes/header.php';
     </form>
   </div>
 </div>
+
+<script>
+document.querySelector('select[name="role"]').addEventListener('change', function () {
+  document.getElementById('permissionsBlock').style.display = this.value === 'admin' ? 'none' : '';
+});
+</script>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

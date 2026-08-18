@@ -129,15 +129,58 @@ function get_flashes(): array
     return $flashes;
 }
 
+/** Danh sach module co the phan quyen rieng cho tung tai khoan staff (key trung ten thu muc). */
+const APP_MODULES = [
+    'rooms' => 'Khu & Phòng',
+    'contracts' => 'Hợp đồng',
+    'deals' => 'Doanh thu ngắn hạn & dài hạn',
+    'billing' => 'Chi phí khác',
+    'expenses' => 'Chi phí',
+    'cleaning' => 'Tiền lương vệ sinh',
+    'funds' => 'Sổ quỹ',
+    'reconciliation' => 'Đối soát ngân hàng',
+    'reports' => 'Báo cáo',
+    'reminders' => 'Nhắc nhở',
+];
+
+// Thu muc con thuoc ve 1 module cha (khong co muc rieng trong APP_MODULES nhung can gate theo module cha)
+const MODULE_ALIASES = [
+    'bank_accounts' => 'reconciliation',
+];
+
 function current_user(): ?array
 {
     return $_SESSION['user'] ?? null;
+}
+
+function is_admin(): bool
+{
+    return ($_SESSION['user']['role'] ?? '') === 'admin';
+}
+
+/** Module hien tai suy ra tu duong dan script (ten thu muc dau tien), quy doi qua module cha neu la alias. */
+function current_module(): string
+{
+    $module = basename(dirname($_SERVER['SCRIPT_NAME']));
+    return MODULE_ALIASES[$module] ?? $module;
+}
+
+function has_permission(string $module): bool
+{
+    if (is_admin()) return true;
+    $perms = array_filter(explode(',', $_SESSION['user']['permissions'] ?? ''));
+    return in_array($module, $perms, true);
 }
 
 function require_login(): void
 {
     if (empty($_SESSION['user'])) {
         redirect('/login.php');
+    }
+    $module = current_module();
+    if (array_key_exists($module, APP_MODULES) && !has_permission($module)) {
+        flash('danger', 'Bạn không có quyền truy cập mục này. Liên hệ quản trị viên để được cấp quyền.');
+        redirect('/dashboard.php');
     }
 }
 
@@ -148,11 +191,6 @@ function require_admin(): void
         http_response_code(403);
         die('Ban khong co quyen truy cap trang nay.');
     }
-}
-
-function is_admin(): bool
-{
-    return ($_SESSION['user']['role'] ?? '') === 'admin';
 }
 
 /** Sinh ma tu dong theo tien to va so thu tu, vd: HD, 2026, 3 -> HD202600003 */

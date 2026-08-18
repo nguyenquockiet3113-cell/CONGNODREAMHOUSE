@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'full_name' => $user['full_name'],
             'username' => $user['username'],
             'role' => $user['role'],
+            'permissions' => $user['permissions'] ?? '',
         ];
         redirect('/dashboard.php');
     }

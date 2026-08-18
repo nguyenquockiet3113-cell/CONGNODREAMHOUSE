@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL DEFAULT 'staff', -- admin | staff
+    permissions TEXT DEFAULT NULL, -- danh sach module duoc phep, cach nhau boi dau phay (chi ap dung cho staff)
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
