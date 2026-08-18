@@ -91,9 +91,9 @@ require_once __DIR__ . '/../includes/header.php';
           <th class="text-end">Charge</th>
           <th class="text-end">TỔNG</th>
           <th class="text-end">ĐÃ CK/TM</th>
-          <th class="text-end">Còn lại</th>
-          <th>TK nhận</th>
+          <th class="text-end">Payment</th>
           <th>Đã TT</th>
+          <th>TK nhận</th>
           <th></th>
         </tr>
       </thead>
@@ -120,9 +120,9 @@ require_once __DIR__ . '/../includes/header.php';
             <td class="text-end"><?= $d['extra_fee'] > 0 ? money($d['extra_fee']) : '' ?></td>
             <td class="text-end fw-semibold"><?= money($grand) ?></td>
             <td class="text-end"><?= money($d['paid_amount']) ?></td>
-            <td class="text-end <?= $remain > 0 ? 'text-danger' : '' ?>"><?= money($remain) ?></td>
-            <td class="small"><?= $d['receiving_account'] ? e($d['receiving_account']) : '<span class="text-muted">—</span>' ?></td>
+            <td class="text-end fw-semibold <?= $remain > 0 ? 'text-danger' : '' ?>"><?= money($remain) ?></td>
             <td class="text-center"><?= $d['payment_status'] === 'paid' ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>' ?></td>
+            <td class="small"><?= $d['receiving_account'] ? e($d['receiving_account']) : '<span class="text-muted">—</span>' ?></td>
             <td class="text-end">
               <?php if ($d['payment_status'] !== 'paid'): ?>
                 <form method="post" action="<?= url('/deals/mark_paid.php') ?>" class="d-inline" data-confirm="Đánh dấu deal của <?= e($d['guest_name']) ?> đã thu đủ <?= money($remain) ?>?">

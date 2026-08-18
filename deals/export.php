@@ -22,15 +22,17 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $deals = $stmt->fetchAll();
 
-$headers = ['Ghi chú', 'Tên khách', 'Mã phòng', 'Số PN', 'Số đêm', 'Đơn giá', 'Check-in', 'Check-out', 'Phụ phí', 'Tổng tiền', 'Đã thu', 'Còn lại', 'TK nhận', 'Trạng thái TT'];
+$headers = ['Note', 'Sale', 'Code', 'PN', 'TIME', 'Price/unit', 'IN', 'OUT', 'Total', 'Charge', 'TỔNG', 'ĐÃ CK/TM', 'Payment', 'Đã TT', 'TK nhận'];
 $rows = [];
 foreach ($deals as $d) {
+    $total = (float)$d['nights'] * (float)$d['price_per_unit'];
+    $grand = $total + (float)$d['extra_fee'];
+    $remain = $grand - (float)$d['paid_amount'];
     $rows[] = [
         $d['note'], $d['guest_name'], $d['room_code'], $d['bedrooms'], $d['nights'], (float)$d['price_per_unit'],
-        vndate($d['checkin_date']), vndate($d['checkout_date']), (float)$d['extra_fee'], (float)$d['total_amount'],
-        (float)$d['paid_amount'], (float)$d['total_amount'] - (float)$d['paid_amount'], $d['receiving_account'],
-        $d['payment_status'] === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán',
+        vndate($d['checkin_date']), vndate($d['checkout_date']), $total, (float)$d['extra_fee'], $grand,
+        (float)$d['paid_amount'], $remain, $d['payment_status'] === 'paid' ? 'x' : '', $d['receiving_account'],
     ];
 }
 
-write_xlsx_and_exit('doanh-thu-ngan-han-' . date('Y-m-d') . '.xlsx', $headers, $rows, [3, 4, 5, 8, 9, 10, 11]);
+write_xlsx_and_exit('doanh-thu-ngan-han-' . date('Y-m-d') . '.xlsx', $headers, $rows, [3, 4, 5, 8, 9, 10, 11, 12]);
