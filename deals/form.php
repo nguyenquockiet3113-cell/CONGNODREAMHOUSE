@@ -99,20 +99,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Cap nhat cac ky da co (khong tu sinh lai de khong mat du lieu da nhap)
             $periodIds = $_POST['period_id'] ?? [];
             foreach ($periodIds as $i => $pid) {
-                $electricity = (float)($_POST['period_electricity'][$i] ?? 0);
-                $water = (float)($_POST['period_water'][$i] ?? 0);
-                $management = (float)($_POST['period_management'][$i] ?? 0);
-                $internet = (float)($_POST['period_internet'][$i] ?? 0);
-                $cleaning = (float)($_POST['period_cleaning'][$i] ?? 0);
-                $vehicle = (float)($_POST['period_vehicle'][$i] ?? 0);
-                $other = (float)($_POST['period_other'][$i] ?? 0);
+                $feeAmounts = [];
+                foreach (DEAL_FEE_KEYS as $key => $postField) {
+                    $feeAmounts[$key] = (float)($_POST[$postField][$i] ?? 0);
+                }
+                $selfPaid = [];
+                foreach (DEAL_FEE_KEYS as $key => $postField) {
+                    if (isset($_POST['period_selfpaid_' . $key][$i])) $selfPaid[] = $key;
+                }
+                $utilitiesAmount = 0;
+                foreach ($feeAmounts as $key => $amt) {
+                    if (!in_array($key, $selfPaid, true)) $utilitiesAmount += $amt;
+                }
                 $pdo->prepare(
-                    'UPDATE deal_periods SET rent_amount=?, deposit_amount=?, electricity_amount=?, water_amount=?, management_fee_amount=?, internet_amount=?, cleaning_fee_amount=?, vehicle_fee_amount=?, other_fee_amount=?, utilities_amount=?, paid_amount=?, note=? WHERE id=? AND deal_id=?'
+                    'UPDATE deal_periods SET rent_amount=?, deposit_amount=?, electricity_amount=?, water_amount=?, management_fee_amount=?, internet_amount=?, cleaning_fee_amount=?, vehicle_fee_amount=?, other_fee_amount=?, utilities_amount=?, self_paid_items=?, paid_amount=?, note=? WHERE id=? AND deal_id=?'
                 )->execute([
                     (float)($_POST['period_rent'][$i] ?? 0),
                     (float)($_POST['period_deposit'][$i] ?? 0),
-                    $electricity, $water, $management, $internet, $cleaning, $vehicle, $other,
-                    $electricity + $water + $management + $internet + $cleaning + $vehicle + $other,
+                    $feeAmounts['electricity'], $feeAmounts['water'], $feeAmounts['management'],
+                    $feeAmounts['internet'], $feeAmounts['cleaning'], $feeAmounts['vehicle'], $feeAmounts['other'],
+                    $utilitiesAmount, implode(',', $selfPaid),
                     (float)($_POST['period_paid'][$i] ?? 0),
                     trim($_POST['period_note'][$i] ?? ''),
                     (int)$pid, $id,
@@ -328,13 +334,18 @@ require_once __DIR__ . '/../includes/header.php';
                   </td>
                   <td><input type="number" step="1000" name="period_rent[]" class="form-control form-control-sm p-rent" value="<?= e($p['rent_amount']) ?>"></td>
                   <td><input type="number" step="1000" name="period_deposit[]" class="form-control form-control-sm p-deposit" value="<?= e($p['deposit_amount']) ?>"></td>
-                  <td><input type="number" step="1000" name="period_electricity[]" class="form-control form-control-sm p-fee" value="<?= e($p['electricity_amount'] ?? 0) ?>"></td>
-                  <td><input type="number" step="1000" name="period_water[]" class="form-control form-control-sm p-fee" value="<?= e($p['water_amount'] ?? 0) ?>"></td>
-                  <td><input type="number" step="1000" name="period_management[]" class="form-control form-control-sm p-fee" value="<?= e($p['management_fee_amount'] ?? 0) ?>"></td>
-                  <td><input type="number" step="1000" name="period_internet[]" class="form-control form-control-sm p-fee" value="<?= e($p['internet_amount'] ?? 0) ?>"></td>
-                  <td><input type="number" step="1000" name="period_cleaning[]" class="form-control form-control-sm p-fee" value="<?= e($p['cleaning_fee_amount'] ?? 0) ?>"></td>
-                  <td><input type="number" step="1000" name="period_vehicle[]" class="form-control form-control-sm p-fee" value="<?= e($p['vehicle_fee_amount'] ?? 0) ?>"></td>
-                  <td><input type="number" step="1000" name="period_other[]" class="form-control form-control-sm p-fee" value="<?= e($p['other_fee_amount'] ?? 0) ?>"></td>
+                  <?php
+                    $periodDbCols = ['electricity' => 'electricity_amount', 'water' => 'water_amount', 'management' => 'management_fee_amount', 'internet' => 'internet_amount', 'cleaning' => 'cleaning_fee_amount', 'vehicle' => 'vehicle_fee_amount', 'other' => 'other_fee_amount'];
+                    $selfPaidSet = array_filter(explode(',', $p['self_paid_items'] ?? ''));
+                  ?>
+                  <?php foreach (DEAL_FEE_KEYS as $feeKey => $postField): ?>
+                    <td>
+                      <input type="number" step="1000" name="<?= e($postField) ?>[]" class="form-control form-control-sm p-fee <?= in_array($feeKey, $selfPaidSet, true) ? 'p-fee-selfpaid' : '' ?>" value="<?= e($p[$periodDbCols[$feeKey]] ?? 0) ?>">
+                      <label class="small text-muted d-block mt-1 mb-0" style="white-space:nowrap;">
+                        <input type="checkbox" name="period_selfpaid_<?= e($feeKey) ?>[<?= $i ?>]" class="form-check-input p-selfpaid" <?= in_array($feeKey, $selfPaidSet, true) ? 'checked' : '' ?>> KH tự đóng
+                      </label>
+                    </td>
+                  <?php endforeach; ?>
                   <td class="text-end fw-semibold p-total">0 đ</td>
                   <td><input type="number" step="1000" name="period_paid[]" class="form-control form-control-sm p-paid" value="<?= e($p['paid_amount']) ?>"></td>
                   <td class="text-end p-remain">0 đ</td>
@@ -446,7 +457,13 @@ function recalcPeriodRow(row) {
   var val = function (cls) { return parseFloat(row.querySelector('.' + cls) ? row.querySelector('.' + cls).value : 0) || 0; };
   var rent = val('p-rent'), deposit = val('p-deposit');
   var fees = 0;
-  row.querySelectorAll('.p-fee').forEach(function (inp) { fees += parseFloat(inp.value) || 0; });
+  row.querySelectorAll('.p-fee').forEach(function (inp) {
+    var cb = inp.closest('td').querySelector('.p-selfpaid');
+    var selfPaid = !!(cb && cb.checked);
+    inp.classList.toggle('text-decoration-line-through', selfPaid);
+    inp.title = selfPaid ? 'Khách tự đóng - không tính vào công nợ công ty' : '';
+    if (!selfPaid) fees += parseFloat(inp.value) || 0;
+  });
   var paid = val('p-paid');
   var total = rent + deposit + fees;
   row.querySelector('.p-total').textContent = fmtVnd(total);
@@ -458,6 +475,12 @@ function recalcPeriodRow(row) {
 if (periodsTableBody) {
   periodsTableBody.querySelectorAll('.period-row').forEach(recalcPeriodRow);
   periodsTableBody.addEventListener('input', function (e) {
+    var row = e.target.closest('.period-row');
+    if (row) recalcPeriodRow(row);
+    if (typeof recalc === 'function') recalc();
+  });
+  periodsTableBody.addEventListener('change', function (e) {
+    if (!e.target.classList.contains('p-selfpaid')) return;
     var row = e.target.closest('.period-row');
     if (row) recalcPeriodRow(row);
     if (typeof recalc === 'function') recalc();
@@ -550,7 +573,10 @@ function recalc() {
     periodRows.forEach(function (row) {
       var val = function (cls) { return parseFloat(row.querySelector('.' + cls) ? row.querySelector('.' + cls).value : 0) || 0; };
       var fees = 0;
-      row.querySelectorAll('.p-fee').forEach(function (inp) { fees += parseFloat(inp.value) || 0; });
+      row.querySelectorAll('.p-fee').forEach(function (inp) {
+        var cb = inp.closest('td').querySelector('.p-selfpaid');
+        if (!(cb && cb.checked)) fees += parseFloat(inp.value) || 0;
+      });
       sum += val('p-rent') + fees;
     });
     document.getElementById('totalDisplay').value = fmt(sum + extra);

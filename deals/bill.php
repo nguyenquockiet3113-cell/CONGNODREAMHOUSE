@@ -44,18 +44,20 @@ $hasZoneLogo = $zoneLogo && file_exists($zoneLogoPath);
 $cin = vndate($period['period_start']);
 $cout = vndate($period['period_end']);
 
+$selfPaidSet = array_filter(explode(',', $period['self_paid_items'] ?? ''));
+
 // STT | Nội dung | Check in | Check out | Thành Tiền
 $items = [
-    ['label' => 'Tiền phòng', 'cin' => '', 'cout' => '', 'amount' => (float)$period['rent_amount']],
-    ['label' => 'Tiền điện', 'cin' => $cin, 'cout' => $cout, 'amount' => (float)$period['electricity_amount']],
-    ['label' => 'Tiền nước', 'cin' => $cin, 'cout' => $cout, 'amount' => (float)$period['water_amount']],
-    ['label' => 'Phí quản lý', 'cin' => $cin, 'cout' => $cout, 'amount' => (float)$period['management_fee_amount']],
-    ['label' => 'Phí internet', 'cin' => $cin, 'cout' => $cout, 'amount' => (float)$period['internet_amount']],
-    ['label' => 'Phí vệ sinh', 'cin' => '', 'cout' => '', 'amount' => (float)$period['cleaning_fee_amount']],
-    ['label' => 'Phí xe', 'cin' => '', 'cout' => '', 'amount' => (float)$period['vehicle_fee_amount']],
-    ['label' => 'Phí khác' . ($period['note'] ? ' (' . $period['note'] . ')' : ''), 'cin' => '', 'cout' => '', 'amount' => (float)$period['other_fee_amount']],
+    ['label' => 'Tiền phòng', 'cin' => '', 'cout' => '', 'amount' => (float)$period['rent_amount'], 'self_paid' => false],
+    ['label' => 'Tiền điện', 'cin' => $cin, 'cout' => $cout, 'amount' => (float)$period['electricity_amount'], 'self_paid' => in_array('electricity', $selfPaidSet, true)],
+    ['label' => 'Tiền nước', 'cin' => $cin, 'cout' => $cout, 'amount' => (float)$period['water_amount'], 'self_paid' => in_array('water', $selfPaidSet, true)],
+    ['label' => 'Phí quản lý', 'cin' => $cin, 'cout' => $cout, 'amount' => (float)$period['management_fee_amount'], 'self_paid' => in_array('management', $selfPaidSet, true)],
+    ['label' => 'Phí internet', 'cin' => $cin, 'cout' => $cout, 'amount' => (float)$period['internet_amount'], 'self_paid' => in_array('internet', $selfPaidSet, true)],
+    ['label' => 'Phí vệ sinh', 'cin' => '', 'cout' => '', 'amount' => (float)$period['cleaning_fee_amount'], 'self_paid' => in_array('cleaning', $selfPaidSet, true)],
+    ['label' => 'Phí xe', 'cin' => '', 'cout' => '', 'amount' => (float)$period['vehicle_fee_amount'], 'self_paid' => in_array('vehicle', $selfPaidSet, true)],
+    ['label' => 'Phí khác' . ($period['note'] ? ' (' . $period['note'] . ')' : ''), 'cin' => '', 'cout' => '', 'amount' => (float)$period['other_fee_amount'], 'self_paid' => in_array('other', $selfPaidSet, true)],
 ];
-$subTotal = array_sum(array_column($items, 'amount'));
+$subTotal = array_sum(array_map(fn($it) => $it['self_paid'] ? 0 : $it['amount'], $items));
 $deposit = (float)$deal['deposit_amount'];
 $applyDepositDefault = $isLastPeriod && $deposit > 0;
 $settleDefault = $subTotal - ($applyDepositDefault ? $deposit : 0);
@@ -130,19 +132,19 @@ $pageTitle = 'Bill ' . $deal['room_code'];
       <td>Tổng cộng</td>
     </tr>
     <?php foreach ($items as $i => $it): ?>
-      <tr>
+      <tr<?= $it['self_paid'] ? ' style="opacity:.6;"' : '' ?>>
         <td class="text-center"><?= $i + 1 ?></td>
-        <td><?= e($it['label']) ?></td>
+        <td><?= e($it['label']) ?><?= $it['self_paid'] ? ' <span style="font-style:italic; color:#888;">(khách tự đóng)</span>' : '' ?></td>
         <td class="text-center"><?= e($it['cin']) ?></td>
         <td class="text-center"><?= e($it['cout']) ?></td>
         <td class="text-center">1,00</td>
         <td></td>
-        <td class="text-end amount-cell"><?= number_format($it['amount'], 0, ',', '.') ?></td>
+        <td class="text-end<?= $it['self_paid'] ? '' : ' amount-cell' ?>"><?= number_format($it['amount'], 0, ',', '.') ?></td>
         <?php if ($i === 0): ?>
           <td class="deposit-cell" rowspan="8"><?= number_format($deposit, 0, ',', '.') ?></td>
         <?php endif; ?>
         <td></td>
-        <td class="text-end amount-cell"><?= number_format($it['amount'], 0, ',', '.') ?></td>
+        <td class="text-end<?= $it['self_paid'] ? '' : ' amount-cell' ?>"><?= $it['self_paid'] ? '—' : number_format($it['amount'], 0, ',', '.') ?></td>
       </tr>
     <?php endforeach; ?>
     <tr>
@@ -164,6 +166,10 @@ $pageTitle = 'Bill ' . $deal['room_code'];
       <td colspan="3" class="settle-value" id="settleAmount"><?= number_format(abs($settleDefault), 0, ',', '.') ?></td>
     </tr>
   </table>
+
+  <?php if ($selfPaidSet): ?>
+    <div style="font-size:11px; color:#888; margin-top:4px; font-style:italic;">* Khoản đánh dấu "khách tự đóng" không tính vào Tổng cộng công ty cần thu.</div>
+  <?php endif; ?>
 
   <label class="deposit-toggle d-print-none" style="display:block; margin-top:10px;">
     <input type="checkbox" id="applyDeposit" <?= $applyDepositDefault ? 'checked' : '' ?> <?= $deposit > 0 ? '' : 'disabled' ?>>

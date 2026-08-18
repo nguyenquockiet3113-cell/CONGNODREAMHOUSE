@@ -120,6 +120,7 @@ CREATE TABLE IF NOT EXISTS deal_periods (
     vehicle_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     other_fee_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     utilities_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
+    self_paid_items VARCHAR(255),
     paid_amount DECIMAL(14,0) NOT NULL DEFAULT 0,
     reconciled TINYINT NOT NULL DEFAULT 0,
     note VARCHAR(255),

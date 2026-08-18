@@ -3,6 +3,26 @@
 const DEAL_PERIOD_DAYS = 30;
 const DEAL_LONG_TERM_THRESHOLD_NIGHTS = 30;
 
+/** Anh xa key khoan phi -> ten field POST tuong ung, dung chung cho form sua ky va logic khach tu dong. */
+const DEAL_FEE_KEYS = [
+    'electricity' => 'period_electricity',
+    'water' => 'period_water',
+    'management' => 'period_management',
+    'internet' => 'period_internet',
+    'cleaning' => 'period_cleaning',
+    'vehicle' => 'period_vehicle',
+    'other' => 'period_other',
+];
+const DEAL_FEE_LABELS = [
+    'electricity' => 'Điện',
+    'water' => 'Nước',
+    'management' => 'Phí QL',
+    'internet' => 'Internet',
+    'cleaning' => 'Vệ sinh',
+    'vehicle' => 'Xe',
+    'other' => 'Phí khác',
+];
+
 function deal_classify(int $nights): string
 {
     return $nights >= DEAL_LONG_TERM_THRESHOLD_NIGHTS ? 'dai_han' : 'ngan_han';

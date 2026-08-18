@@ -247,13 +247,15 @@ foreach ($deals as $d) {
                   <td><?= vndate($p['period_start']) ?> - <?= vndate($p['period_end']) ?></td>
                   <td class="text-end"><?= money($p['rent_amount']) ?></td>
                   <td class="text-end"><?= $p['deposit_amount'] > 0 ? money($p['deposit_amount']) : '' ?></td>
-                  <td class="text-end"><?= money($p['electricity_amount'] ?? 0) ?></td>
-                  <td class="text-end"><?= money($p['water_amount'] ?? 0) ?></td>
-                  <td class="text-end"><?= money($p['management_fee_amount'] ?? 0) ?></td>
-                  <td class="text-end"><?= money($p['internet_amount'] ?? 0) ?></td>
-                  <td class="text-end"><?= money($p['cleaning_fee_amount'] ?? 0) ?></td>
-                  <td class="text-end"><?= money($p['vehicle_fee_amount'] ?? 0) ?></td>
-                  <td class="text-end"><?= money($p['other_fee_amount'] ?? 0) ?></td>
+                  <?php
+                    $periodDbCols2 = ['electricity' => 'electricity_amount', 'water' => 'water_amount', 'management' => 'management_fee_amount', 'internet' => 'internet_amount', 'cleaning' => 'cleaning_fee_amount', 'vehicle' => 'vehicle_fee_amount', 'other' => 'other_fee_amount'];
+                    $selfPaidSet2 = array_filter(explode(',', $p['self_paid_items'] ?? ''));
+                  ?>
+                  <?php foreach ($periodDbCols2 as $feeKey => $col): ?>
+                    <td class="text-end<?= in_array($feeKey, $selfPaidSet2, true) ? ' text-muted' : '' ?>">
+                      <?= money($p[$col] ?? 0) ?><?= in_array($feeKey, $selfPaidSet2, true) ? ' <span title="Khách tự đóng">*</span>' : '' ?>
+                    </td>
+                  <?php endforeach; ?>
                   <td class="text-end fw-semibold"><?= money($pt) ?></td>
                   <td class="text-end text-success"><?= money($p['paid_amount']) ?></td>
                   <td class="text-end <?= $pr > 0 ? 'text-danger' : '' ?>"><?= money($pr) ?></td>
