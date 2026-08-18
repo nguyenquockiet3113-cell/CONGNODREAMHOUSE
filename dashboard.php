@@ -87,6 +87,63 @@ $stmt = $pdo->prepare($sql); $stmt->execute($params);
 $owedLong = (float)$stmt->fetch()['s'];
 $totalOwed = $owedShort + $owedLong;
 
+// --- Doanh thu theo ngay thanh toan (thuc nhan tien) va theo ngay phat sinh (chia deu theo ngay o/ky) ---
+$dayCursor = $fromDate;
+$dayLabels = [];
+$cashByDay = [];
+$accrualByDay = [];
+while ($dayCursor <= $toDate) {
+    $dayLabels[] = $dayCursor;
+    $cashByDay[$dayCursor] = 0.0;
+    $accrualByDay[$dayCursor] = 0.0;
+    $dayCursor = date('Y-m-d', strtotime($dayCursor . ' +1 day'));
+}
+
+// Theo ngay thanh toan: cong tien vao dung ngay nhan (deal_payments.payment_date), khong quan tam ngay o
+$sql = "SELECT dp.payment_date, dp.amount FROM deal_payments dp JOIN deals d ON d.id = dp.deal_id
+        WHERE dp.payment_date BETWEEN ? AND ?";
+$params = [$fromDate, $toDate];
+if ($filterZone !== '') { $sql .= ' AND d.zone = ?'; $params[] = $filterZone; }
+if ($filterRoomCode !== '') { $sql .= ' AND d.room_code LIKE ?'; $params[] = "%$filterRoomCode%"; }
+$stmt = $pdo->prepare($sql); $stmt->execute($params);
+foreach ($stmt->fetchAll() as $row) {
+    if (isset($cashByDay[$row['payment_date']])) $cashByDay[$row['payment_date']] += (float)$row['amount'];
+}
+
+// Theo ngay phat sinh (ngan han): tong tien deal / so dem, chia deu tung ngay tu checkin den truoc checkout
+$sql = "SELECT checkin_date, checkout_date, nights, total_amount FROM deals
+        WHERE deal_type = 'ngan_han' AND checkin_date <= ? AND checkout_date > ?";
+$params = [$toDate, $fromDate];
+$sql = apply_deal_filters($sql, $params, $filterZone, $filterRoomCode);
+$stmt = $pdo->prepare($sql); $stmt->execute($params);
+foreach ($stmt->fetchAll() as $d) {
+    $nights = max(1, (int)$d['nights']);
+    $daily = (float)$d['total_amount'] / $nights;
+    $day = $d['checkin_date'];
+    while ($day < $d['checkout_date']) {
+        if (isset($accrualByDay[$day])) $accrualByDay[$day] += $daily;
+        $day = date('Y-m-d', strtotime($day . ' +1 day'));
+    }
+}
+
+// Theo ngay phat sinh (dai han): (tien thue + tien dich vu) cua tung ky / so ngay ky, chia deu tu period_start den truoc period_end
+$sql = "SELECT dp.period_start, dp.period_end, dp.rent_amount, dp.utilities_amount FROM deal_periods dp
+        JOIN deals d ON d.id = dp.deal_id
+        WHERE d.deal_type = 'dai_han' AND dp.period_start <= ? AND dp.period_end > ?";
+$params = [$toDate, $fromDate];
+if ($filterZone !== '') { $sql .= ' AND d.zone = ?'; $params[] = $filterZone; }
+if ($filterRoomCode !== '') { $sql .= ' AND d.room_code LIKE ?'; $params[] = "%$filterRoomCode%"; }
+$stmt = $pdo->prepare($sql); $stmt->execute($params);
+foreach ($stmt->fetchAll() as $p) {
+    $periodDays = max(1, (int)((strtotime($p['period_end']) - strtotime($p['period_start'])) / 86400));
+    $daily = ((float)$p['rent_amount'] + (float)$p['utilities_amount']) / $periodDays;
+    $day = $p['period_start'];
+    while ($day < $p['period_end']) {
+        if (isset($accrualByDay[$day])) $accrualByDay[$day] += $daily;
+        $day = date('Y-m-d', strtotime($day . ' +1 day'));
+    }
+}
+
 // --- Hop dong sap het han ---
 $sql = "SELECT * FROM contracts WHERE status = 'active' AND end_date >= ? AND end_date <= ?";
 $params = [$today, date('Y-m-d', strtotime("+$alertDays days"))];
@@ -236,6 +293,20 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 </div>
 
+<div class="row g-3 mb-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <span>Doanh thu theo ngày thanh toán và theo ngày phát sinh (<?= vndate($fromDate) ?> - <?= vndate($toDate) ?>)</span>
+        <div class="small text-muted mt-1">"Theo ngày thanh toán": tiền được cộng vào đúng ngày thực nhận. "Theo ngày phát sinh": tổng tiền deal/kỳ được chia đều cho từng ngày ở/kỳ, không phụ thuộc ngày thanh toán.</div>
+      </div>
+      <div class="card-body">
+        <canvas id="dailyRevenueChart" height="90"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="row g-3">
   <div class="col-lg-6">
     <div class="card h-100">
@@ -279,6 +350,22 @@ require_once __DIR__ . '/includes/header.php';
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
+new Chart(document.getElementById('dailyRevenueChart'), {
+  type: 'line',
+  data: {
+    labels: <?= json_encode(array_map(fn($d) => vndate($d), $dayLabels)) ?>,
+    datasets: [
+      { label: 'Theo ngày thanh toán', data: <?= json_encode(array_values($cashByDay)) ?>, borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,.15)', tension: 0.2, fill: true },
+      { label: 'Theo ngày phát sinh', data: <?= json_encode(array_values($accrualByDay)) ?>, borderColor: '#f4511e', backgroundColor: 'rgba(244,81,30,.15)', tension: 0.2, fill: true },
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'bottom' } },
+    scales: { y: { beginAtZero: true, ticks: { callback: v => new Intl.NumberFormat('vi-VN').format(v) } } }
+  }
+});
+
 new Chart(document.getElementById('revenueChart'), {
   type: 'bar',
   data: {
