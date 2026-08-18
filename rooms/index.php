@@ -6,6 +6,7 @@ $zoneFilter = trim($_GET['zone'] ?? '');
 $bedroomsFilter = trim($_GET['bedrooms'] ?? '');
 $search = trim($_GET['q'] ?? '');
 $availFilter = trim($_GET['avail'] ?? '');
+$sortOrder = trim($_GET['sort'] ?? 'az') === 'za' ? 'za' : 'az';
 $today = date('Y-m-d');
 $fromDate = trim($_GET['from'] ?? '') ?: $today;
 $toDate = trim($_GET['to'] ?? '') ?: $fromDate;
@@ -37,7 +38,7 @@ if ($search !== '') {
     $params[] = "%$search%";
     $params[] = "%$search%";
 }
-$sql .= ' ORDER BY zone ASC, room_code ASC';
+$sql .= ' ORDER BY zone ASC, room_code ' . ($sortOrder === 'za' ? 'DESC' : 'ASC');
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $allRooms = $stmt->fetchAll();
@@ -123,6 +124,13 @@ require_once __DIR__ . '/../includes/header.php';
         </select>
       </div>
       <div class="col-sm-2">
+        <label class="form-label small mb-1">Sắp xếp mã phòng</label>
+        <select name="sort" class="form-select">
+          <option value="az" <?= $sortOrder === 'az' ? 'selected' : '' ?>>A - Z</option>
+          <option value="za" <?= $sortOrder === 'za' ? 'selected' : '' ?>>Z - A</option>
+        </select>
+      </div>
+      <div class="col-sm-2">
         <button class="btn btn-outline-secondary w-100"><i class="bi bi-search"></i> Lọc</button>
       </div>
       <div class="col-sm-2">
@@ -156,7 +164,6 @@ foreach ($rooms as $r) {
           <tr>
             <th>Mã phòng</th>
             <th>Số phòng ngủ</th>
-            <th>Mã dịch vụ (Điện/Nước/Net) <a href="<?= url('/expenses/room_codes.php') ?>" class="small" title="Sửa mã điện/nước tại Chi phí"><i class="bi bi-pencil-square"></i></a></th>
             <th>Tình trạng</th>
             <th class="text-end">Thao tác</th>
           </tr>
@@ -170,16 +177,6 @@ foreach ($rooms as $r) {
                 <a href="<?= url('/rooms/form.php?id=' . $r['id']) ?>" class="text-decoration-none text-reset"><?= e($r['room_code']) ?></a>
               </td>
               <td><?= (int)$r['bedrooms'] ?> PN</td>
-              <td class="small text-muted">
-                <?php
-                  $codes = array_filter([
-                      $r['electricity_code'] ? 'Điện: ' . $r['electricity_code'] : '',
-                      $r['water_code'] ? 'Nước: ' . $r['water_code'] : '',
-                      $r['internet_code'] ? 'Net: ' . $r['internet_code'] : '',
-                  ]);
-                  echo $codes ? e(implode(' · ', $codes)) : '—';
-                ?>
-              </td>
               <td class="small">
                 <?php if ($occupied): ?>
                   <span class="text-primary"><?= e($roomDeals[0]['guest_name']) ?> — đến <?= vndate($roomDeals[0]['checkout_date']) ?></span>
