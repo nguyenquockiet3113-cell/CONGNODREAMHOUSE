@@ -53,6 +53,7 @@ require_once __DIR__ . '/../includes/header.php';
     <a href="<?= url('/cleaning/export.php?' . http_build_query($_GET)) ?>" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-arrow-down"></i> Xuất Excel</a>
     <a href="<?= url('/cleaning/staff.php') ?>" class="btn btn-outline-secondary"><i class="bi bi-people"></i> Nhân viên</a>
     <a href="<?= url('/cleaning/prices.php') ?>" class="btn btn-outline-secondary"><i class="bi bi-tags"></i> Bảng giá</a>
+    <a href="<?= url('/cleaning/quick_penalty.php') ?>" class="btn btn-outline-danger"><i class="bi bi-exclamation-triangle"></i> Ghi phạt nhanh</a>
     <a href="<?= url('/cleaning/add.php') ?>" class="btn btn-success"><i class="bi bi-plus-lg"></i> Thêm công việc</a>
   </div>
 </div>
