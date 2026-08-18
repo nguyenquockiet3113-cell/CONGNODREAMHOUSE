@@ -9,7 +9,7 @@ $deal = [
     'checkin_date' => date('Y-m-d'), 'checkout_date' => date('Y-m-d', strtotime('+1 day')),
     'price_per_unit' => 0, 'deposit_amount' => 0, 'deposit_date' => '', 'extra_fee' => 0,
     'payment_method' => 'chuyen_khoan', 'receiving_account' => '', 'paid_amount' => 0,
-    'payment_status' => 'unpaid', 'note' => '',
+    'payment_status' => 'unpaid', 'apply_vat' => 0, 'vat_percent' => 0, 'status' => 'active', 'note' => '',
 ];
 $periods = [];
 $payments = [];
@@ -55,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $deal['extra_fee'] = (float)($_POST['extra_fee'] ?? 0);
     $deal['payment_method'] = $_POST['payment_method'] ?? 'chuyen_khoan';
     $deal['receiving_account'] = trim($_POST['receiving_account'] ?? '');
+    $deal['status'] = in_array($_POST['status'] ?? '', array_keys(DEAL_STATUS_LABELS), true) ? $_POST['status'] : 'active';
     $deal['note'] = trim($_POST['note'] ?? '');
 
     if ($deal['room_code'] === '') $errors[] = 'Vui lòng nhập mã phòng.';
@@ -67,19 +68,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$errors) {
         $nights = deal_nights($deal['checkin_date'], $deal['checkout_date']);
         $dealType = deal_classify($nights);
-        $total = $nights * $deal['price_per_unit'] + $deal['extra_fee'];
+        $rentTotal = deal_rent_total($nights, $deal['price_per_unit'], $dealType);
+        $vatAmount = !empty($deal['apply_vat']) ? round($rentTotal * (float)$deal['vat_percent'] / 100) : 0;
+        $total = $rentTotal + $vatAmount + $deal['extra_fee'];
         $now = date('Y-m-d H:i:s');
 
         $cols = [
             'room_code', 'bedrooms', 'zone', 'guest_name', 'checkin_date', 'checkout_date',
             'nights', 'deal_type', 'price_per_unit', 'deposit_amount', 'deposit_date', 'extra_fee',
-            'total_amount', 'payment_method', 'receiving_account', 'note',
+            'total_amount', 'payment_method', 'receiving_account', 'apply_vat', 'vat_percent', 'status', 'note',
         ];
         $values = [
             $deal['room_code'], $deal['bedrooms'], $deal['zone'], $deal['guest_name'],
             $deal['checkin_date'], $deal['checkout_date'], $nights, $dealType,
             $deal['price_per_unit'], $deal['deposit_amount'], $deal['deposit_date'], $deal['extra_fee'],
-            $total, $deal['payment_method'], $deal['receiving_account'], $deal['note'],
+            $total, $deal['payment_method'], $deal['receiving_account'],
+            (int)!empty($deal['apply_vat']), (float)($deal['vat_percent'] ?? 0), $deal['status'] ?? 'active', $deal['note'],
         ];
 
         if ($id) {
@@ -243,10 +247,18 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
       </div>
 
-      <div class="mt-3">
+      <div class="mt-3 d-flex align-items-center gap-3 flex-wrap">
         <span class="badge bg-<?= $deal['payment_status'] === 'paid' ? 'success' : 'secondary' ?> py-2 px-3">
           <?= $deal['payment_status'] === 'paid' ? 'Đã thanh toán đủ' : 'Chưa thanh toán đủ' ?>
         </span>
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label mb-0 small">Tình trạng</label>
+          <select name="status" class="form-select form-select-sm" style="width:auto;">
+            <?php foreach (DEAL_STATUS_LABELS as $k => $v): ?>
+              <option value="<?= e($k) ?>" <?= $deal['status'] === $k ? 'selected' : '' ?>><?= e($v) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
       </div>
 
       <?php if ($periods): ?>

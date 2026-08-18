@@ -14,6 +14,33 @@ function deal_nights(string $checkin, string $checkout): int
     return max(0, (int)$diff);
 }
 
+/** So thang tron (30 ngay) va so ngay le con lai. */
+function deal_months_breakdown(int $nights): array
+{
+    $fullMonths = intdiv($nights, DEAL_PERIOD_DAYS);
+    $remainderDays = $nights % DEAL_PERIOD_DAYS;
+    return [$fullMonths, $remainderDays];
+}
+
+/**
+ * Tien thue truoc VAT/coc/phu phi.
+ * Ngan han: price_per_unit la gia/dem -> nights * price.
+ * Dai han: price_per_unit la gia/thang (30 ngay) -> so thang tron * price + ti le ngay le,
+ * giong het cach generate_deal_periods() chia ky de 2 con so nay luon khop nhau.
+ */
+function deal_rent_total(int $nights, float $pricePerUnit, string $dealType): float
+{
+    if ($dealType !== 'dai_han') {
+        return $nights * $pricePerUnit;
+    }
+    [$fullMonths, $remainderDays] = deal_months_breakdown($nights);
+    $total = $fullMonths * $pricePerUnit;
+    if ($remainderDays > 0) {
+        $total += round($pricePerUnit * $remainderDays / DEAL_PERIOD_DAYS);
+    }
+    return $total;
+}
+
 /** Sinh cac ky 30 ngay cho 1 deal dai han. Chi goi khi deal chua co ky nao. */
 function generate_deal_periods(PDO $pdo, int $dealId, string $checkin, string $checkout, float $pricePerUnit, float $deposit): void
 {

@@ -105,6 +105,12 @@ const CONTRACT_STATUS_LABELS = [
     'cancelled' => 'Đã hủy',
 ];
 
+const DEAL_STATUS_LABELS = [
+    'active' => 'Đang thuê',
+    'ended' => 'Đã trả phòng',
+    'cancelled' => 'Đã hủy',
+];
+
 const EXPENSE_CATEGORIES = [
     'Điện', 'Nước + Phí quản lý', 'Thẻ xe', 'Phí thẻ/ngân hàng', 'Internet',
     'Thuế - Mặt bằng', 'Lương', 'Sửa chữa', 'Rác', 'Vật tư', 'Phát sinh khác',

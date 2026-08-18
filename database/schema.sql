@@ -114,6 +114,9 @@ CREATE TABLE IF NOT EXISTS deals (
     receiving_account VARCHAR(100) DEFAULT NULL,
     paid_amount DECIMAL(14,0) NOT NULL DEFAULT 0, -- Da CK/TM (chi dung cho ngan han)
     payment_status VARCHAR(20) NOT NULL DEFAULT 'unpaid', -- unpaid | paid (cot "Da TT")
+    apply_vat TINYINT(1) NOT NULL DEFAULT 0,
+    vat_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'active', -- active | ended | cancelled (Tinh trang)
     reconciled TINYINT(1) NOT NULL DEFAULT 0,
     note TEXT,
     created_at DATETIME NOT NULL,
