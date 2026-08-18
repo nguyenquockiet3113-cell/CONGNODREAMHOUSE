@@ -102,6 +102,8 @@ CREATE TABLE IF NOT EXISTS deals (
     vat_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
     status VARCHAR(20) NOT NULL DEFAULT 'active',
     reconciled TINYINT NOT NULL DEFAULT 0,
+    issue_invoice TINYINT NOT NULL DEFAULT 0,
+    invoice_declared_price DECIMAL(14,0),
     note TEXT,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL

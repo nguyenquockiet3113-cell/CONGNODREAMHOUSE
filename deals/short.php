@@ -94,12 +94,13 @@ require_once __DIR__ . '/../includes/header.php';
           <th class="text-end">Payment</th>
           <th>Đã TT</th>
           <th>TK nhận</th>
+          <th class="text-center">Hóa đơn</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         <?php if (!$deals): ?>
-          <tr><td colspan="16" class="text-center text-muted py-4">Chưa có deal ngắn hạn nào.</td></tr>
+          <tr><td colspan="17" class="text-center text-muted py-4">Chưa có deal ngắn hạn nào.</td></tr>
         <?php endif; ?>
         <?php foreach ($deals as $d): ?>
           <?php
@@ -123,6 +124,12 @@ require_once __DIR__ . '/../includes/header.php';
             <td class="text-end fw-semibold <?= $remain > 0 ? 'text-danger' : '' ?>"><?= money($remain) ?></td>
             <td class="text-center"><?= $d['payment_status'] === 'paid' ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>' ?></td>
             <td class="small"><?= $d['receiving_account'] ? e($d['receiving_account']) : '<span class="text-muted">—</span>' ?></td>
+            <td class="text-center">
+              <input type="checkbox" class="form-check-input invoice-toggle" data-id="<?= $d['id'] ?>" <?= !empty($d['issue_invoice']) ? 'checked' : '' ?> title="Xuất hóa đơn VAT">
+              <?php if (!empty($d['issue_invoice'])): ?>
+                <a href="<?= url('/deals/invoice_calc.php?id=' . $d['id']) ?>" target="_blank" class="d-block small" title="Xem bảng kê xuất hóa đơn"><i class="bi bi-receipt-cutoff"></i></a>
+              <?php endif; ?>
+            </td>
             <td class="text-end">
               <?php if ($d['payment_status'] !== 'paid'): ?>
                 <form method="post" action="<?= url('/deals/mark_paid.php') ?>" class="d-inline" data-confirm="Đánh dấu deal của <?= e($d['guest_name']) ?> đã thu đủ <?= money($remain) ?>?">
@@ -146,4 +153,22 @@ require_once __DIR__ . '/../includes/header.php';
     </table>
   </div>
 </div>
+
+<script>
+document.querySelectorAll('.invoice-toggle').forEach(function (cb) {
+  cb.addEventListener('change', function () {
+    var id = this.dataset.id;
+    var checked = this.checked;
+    var self = this;
+    fetch('<?= url('/deals/toggle_invoice.php') ?>', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'csrf_token=<?= urlencode(csrf_token()) ?>&id=' + encodeURIComponent(id) + '&value=' + (checked ? '1' : '0'),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function () { window.location.reload(); })
+      .catch(function () { alert('Có lỗi khi cập nhật. Vui lòng thử lại.'); self.checked = !checked; });
+  });
+});
+</script>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

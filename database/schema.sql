@@ -122,6 +122,8 @@ CREATE TABLE IF NOT EXISTS deals (
     vat_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
     status VARCHAR(20) NOT NULL DEFAULT 'active', -- active | ended | cancelled (Tinh trang)
     reconciled TINYINT(1) NOT NULL DEFAULT 0,
+    issue_invoice TINYINT(1) NOT NULL DEFAULT 0, -- co xuat hoa don VAT khong
+    invoice_declared_price DECIMAL(14,0), -- gia ke khai /dem tren hoa don (nhap tay)
     note TEXT,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL
