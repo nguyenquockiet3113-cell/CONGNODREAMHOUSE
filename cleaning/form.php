@@ -21,7 +21,11 @@ if ($id) {
     $log = $found;
 }
 
-$staffList = $pdo->query('SELECT DISTINCT staff_name FROM cleaning_logs ORDER BY staff_name')->fetchAll(PDO::FETCH_COLUMN);
+$staffList = $pdo->query(
+    "SELECT name FROM cleaning_staff WHERE is_active = 1
+     UNION SELECT DISTINCT staff_name FROM cleaning_logs
+     ORDER BY name"
+)->fetchAll(PDO::FETCH_COLUMN);
 $rooms = $pdo->query('SELECT room_code, bedrooms FROM rooms ORDER BY room_code')->fetchAll();
 $priceList = $pdo->query('SELECT * FROM cleaning_price_list ORDER BY work_type, unit_price')->fetchAll();
 $workTypes = array_values(array_unique(array_column($priceList, 'work_type')));

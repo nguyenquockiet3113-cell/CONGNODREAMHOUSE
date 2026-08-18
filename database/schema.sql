@@ -184,6 +184,18 @@ CREATE TABLE IF NOT EXISTS cleaning_price_list (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
+-- Danh sach nhan vien ve sinh
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS cleaning_staff (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(150) NOT NULL UNIQUE,
+    phone VARCHAR(30) DEFAULT NULL,
+    note VARCHAR(255) DEFAULT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
 -- Bang cong nhat ky lam viec ve sinh (tinh luong)
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS cleaning_logs (

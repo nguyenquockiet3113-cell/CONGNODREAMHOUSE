@@ -151,6 +151,15 @@ CREATE TABLE IF NOT EXISTS cleaning_price_list (
     updated_at DATETIME NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS cleaning_staff (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(150) NOT NULL UNIQUE,
+    phone VARCHAR(30),
+    note VARCHAR(255),
+    is_active TINYINT NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS cleaning_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     work_date DATE NOT NULL,
