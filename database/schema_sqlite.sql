@@ -148,7 +148,8 @@ CREATE TABLE IF NOT EXISTS cleaning_price_list (
     unit_price DECIMAL(14,0) NOT NULL DEFAULT 0,
     note VARCHAR(255),
     created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL
+    updated_at DATETIME NOT NULL,
+    UNIQUE (work_type, work_item)
 );
 
 CREATE TABLE IF NOT EXISTS cleaning_staff (
@@ -219,7 +220,7 @@ CREATE TABLE IF NOT EXISTS settings (
 INSERT OR IGNORE INTO users (id, full_name, username, password_hash, role, is_active, created_at)
 VALUES (1, 'Quan tri vien', 'admin', '$2y$12$5DodMIMG6WDRxjD13mXMe.YTx81cjUVnUD/P1IldyrcYkTIMbOtAG', 'admin', 1, datetime('now'));
 
-INSERT INTO cleaning_price_list (work_type, work_item, unit, unit_price, created_at, updated_at) VALUES
+INSERT OR IGNORE INTO cleaning_price_list (work_type, work_item, unit, unit_price, created_at, updated_at) VALUES
 ('OUT', '1', 'phong', 70000, datetime('now'), datetime('now')),
 ('OUT', '2', 'phong', 110000, datetime('now'), datetime('now')),
 ('OUT', '3', 'phong', 150000, datetime('now'), datetime('now')),

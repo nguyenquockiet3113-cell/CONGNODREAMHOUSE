@@ -180,7 +180,8 @@ CREATE TABLE IF NOT EXISTS cleaning_price_list (
     unit_price DECIMAL(14,0) NOT NULL DEFAULT 0,
     note VARCHAR(255) DEFAULT NULL,
     created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL
+    updated_at DATETIME NOT NULL,
+    UNIQUE KEY uniq_price_item (work_type, work_item)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
@@ -294,4 +295,5 @@ INSERT INTO cleaning_price_list (work_type, work_item, unit, unit_price, created
 ('LUU', 'Set up 1PN', 'phong', 65000, NOW(), NOW()),
 ('LUU', 'Set up 2PN', 'phong', 100000, NOW(), NOW()),
 ('LUU', 'Set up 3PN', 'phong', 140000, NOW(), NOW()),
-('Tổng vệ sinh', 'Tổng vệ sinh', 'gio', 65000, NOW(), NOW());
+('Tổng vệ sinh', 'Tổng vệ sinh', 'gio', 65000, NOW(), NOW())
+ON DUPLICATE KEY UPDATE work_type = work_type;
