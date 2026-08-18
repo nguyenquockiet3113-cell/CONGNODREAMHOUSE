@@ -57,7 +57,30 @@ $signDay = date('j', strtotime($c['created_at'] ?? 'now'));
 $signMonth = date('n', strtotime($c['created_at'] ?? 'now'));
 $signYear = date('Y', strtotime($c['created_at'] ?? 'now'));
 
+// Logo (neu co file assets/img/logo.png)
+$logoPath = __DIR__ . '/../assets/img/logo.png';
+$logoXml = '';
+$hasLogo = file_exists($logoPath);
+if ($hasLogo) {
+    [$logoW, $logoH] = getimagesize($logoPath);
+    $cy = 609600; // ~0.667 inch, EMU
+    $cx = (int)round($cy * ($logoW / $logoH));
+    $logoXml = '<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:drawing>'
+        . '<wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">'
+        . '<wp:extent cx="' . $cx . '" cy="' . $cy . '"/>'
+        . '<wp:docPr id="1" name="Logo"/>'
+        . '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+        . '<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+        . '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+        . '<pic:nvPicPr><pic:cNvPr id="0" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr>'
+        . '<pic:blipFill><a:blip r:embed="rIdLogo"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
+        . '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' . $cx . '" cy="' . $cy . '"/></a:xfrm>'
+        . '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>'
+        . '</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>';
+}
+
 $body = '';
+$body .= $logoXml;
 $body .= para(run('HỢP ĐỒNG THUÊ CĂN HỘ', ['b' => true, 'sz' => 30]), ['align' => 'center', 'after' => 40]);
 $body .= para(run('APARTMENT LEASE AGREEMENT', ['i' => true, 'sz' => 22]), ['align' => 'center', 'after' => 200]);
 $body .= para(run('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', ['b' => true]), ['align' => 'center', 'after' => 20]);
@@ -151,6 +174,7 @@ $contentTypesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
     . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
     . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
     . '<Default Extension="xml" ContentType="application/xml"/>'
+    . '<Default Extension="png" ContentType="image/png"/>'
     . '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
     . '</Types>';
 
@@ -159,11 +183,20 @@ $relsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
     . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
     . '</Relationships>';
 
+$documentRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    . '<Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.png"/>'
+    . '</Relationships>';
+
 $tmpFile = tempnam(sys_get_temp_dir(), 'hd_') . '.docx';
 $zip = new ZipArchive();
 $zip->open($tmpFile, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 $zip->addFromString('[Content_Types].xml', $contentTypesXml);
 $zip->addFromString('_rels/.rels', $relsXml);
+if ($hasLogo) {
+    $zip->addFromString('word/_rels/document.xml.rels', $documentRelsXml);
+    $zip->addFile($logoPath, 'word/media/logo.png');
+}
 $zip->addFromString('word/document.xml', $documentXml);
 $zip->close();
 

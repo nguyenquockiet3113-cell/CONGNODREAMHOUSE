@@ -52,6 +52,10 @@ $signYear = date('Y', strtotime($c['created_at'] ?? 'now'));
     <button onclick="window.close()">Đóng</button>
   </div>
 
+  <div class="center" style="margin-bottom:8px;">
+    <img src="<?= url('/assets/img/logo.png') ?>" alt="Logo" style="height:64px;">
+  </div>
+
   <h1>HỢP ĐỒNG THUÊ CĂN HỘ</h1>
   <div class="sub">APARTMENT LEASE AGREEMENT</div>
   <p class="center bold">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br>Độc Lập – Tự Do – Hạnh Phúc</p>
