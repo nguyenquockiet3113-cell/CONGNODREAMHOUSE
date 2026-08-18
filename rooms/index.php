@@ -5,6 +5,22 @@ require_login();
 $zoneFilter = trim($_GET['zone'] ?? '');
 $bedroomsFilter = trim($_GET['bedrooms'] ?? '');
 $search = trim($_GET['q'] ?? '');
+$availFilter = trim($_GET['avail'] ?? '');
+$today = date('Y-m-d');
+$fromDate = trim($_GET['from'] ?? '') ?: $today;
+$toDate = trim($_GET['to'] ?? '') ?: $fromDate;
+if ($toDate < $fromDate) { $toDate = $fromDate; }
+
+// Phong co khach trong khoang ngay dang loc (deal nao chong lan voi [fromDate, toDate])
+$occStmt = $pdo->prepare(
+    'SELECT room_code, guest_name, checkin_date, checkout_date FROM deals
+     WHERE checkin_date <= ? AND checkout_date > ? ORDER BY checkin_date ASC'
+);
+$occStmt->execute([$toDate, $fromDate]);
+$occupiedMap = [];
+foreach ($occStmt->fetchAll() as $d) {
+    $occupiedMap[$d['room_code']][] = $d;
+}
 
 $sql = 'SELECT * FROM rooms WHERE 1=1';
 $params = [];
@@ -24,16 +40,22 @@ if ($search !== '') {
 $sql .= ' ORDER BY zone ASC, room_code ASC';
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
-$rooms = $stmt->fetchAll();
+$allRooms = $stmt->fetchAll();
+
+if ($availFilter === 'occupied') {
+    $rooms = array_values(array_filter($allRooms, fn($r) => isset($occupiedMap[$r['room_code']])));
+} elseif ($availFilter === 'vacant') {
+    $rooms = array_values(array_filter($allRooms, fn($r) => !isset($occupiedMap[$r['room_code']])));
+} else {
+    $rooms = $allRooms;
+}
+
+$occupiedCount = count(array_filter($allRooms, fn($r) => isset($occupiedMap[$r['room_code']])));
+$vacantCount = count($allRooms) - $occupiedCount;
 
 $zones = $pdo->query("SELECT DISTINCT zone FROM rooms WHERE zone IS NOT NULL AND zone != '' ORDER BY zone")->fetchAll(PDO::FETCH_COLUMN);
 $bedroomOptions = $pdo->query('SELECT DISTINCT bedrooms FROM rooms WHERE bedrooms IS NOT NULL ORDER BY bedrooms')->fetchAll(PDO::FETCH_COLUMN);
-
-// Phong dang co khach o (theo deal co checkin <= hom nay < checkout)
-$today = date('Y-m-d');
-$occupiedCodes = $pdo->prepare('SELECT DISTINCT room_code FROM deals WHERE checkin_date <= ? AND checkout_date > ?');
-$occupiedCodes->execute([$today, $today]);
-$occupiedSet = array_flip($occupiedCodes->fetchAll(PDO::FETCH_COLUMN));
+$occupiedSet = $occupiedMap;
 
 $pageTitle = 'Danh sách phòng';
 require_once __DIR__ . '/../includes/header.php';
@@ -47,14 +69,26 @@ require_once __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
+<div class="row g-3 mb-3">
+  <div class="col-sm-4">
+    <div class="stat-card"><div class="text-muted small">Tổng số phòng (theo bộ lọc)</div><div class="stat-value"><?= count($allRooms) ?></div></div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card"><div class="text-muted small">Đang có khách <?= $fromDate === $toDate ? '(' . vndate($fromDate) . ')' : '(' . vndate($fromDate) . ' - ' . vndate($toDate) . ')' ?></div><div class="stat-value text-primary"><?= $occupiedCount ?></div></div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card"><div class="text-muted small">Còn trống cả khoảng này</div><div class="stat-value text-success"><?= $vacantCount ?></div></div>
+  </div>
+</div>
+
 <div class="card mb-3">
   <div class="card-body">
     <form class="row g-2 align-items-end">
-      <div class="col-sm-4">
+      <div class="col-sm-3">
         <label class="form-label small mb-1">Tìm kiếm</label>
         <input type="text" name="q" class="form-control" placeholder="Mã phòng, khu vực..." value="<?= e($search) ?>">
       </div>
-      <div class="col-sm-3">
+      <div class="col-sm-2">
         <label class="form-label small mb-1">Khu vực</label>
         <select name="zone" class="form-select">
           <option value="">-- Tất cả khu vực --</option>
@@ -63,7 +97,7 @@ require_once __DIR__ . '/../includes/header.php';
           <?php endforeach; ?>
         </select>
       </div>
-      <div class="col-sm-2">
+      <div class="col-sm-1">
         <label class="form-label small mb-1">Số PN</label>
         <select name="bedrooms" class="form-select">
           <option value="">-- Tất cả --</option>
@@ -73,7 +107,26 @@ require_once __DIR__ . '/../includes/header.php';
         </select>
       </div>
       <div class="col-sm-2">
+        <label class="form-label small mb-1">Từ ngày</label>
+        <input type="date" name="from" class="form-control" value="<?= e($fromDate) ?>">
+      </div>
+      <div class="col-sm-2">
+        <label class="form-label small mb-1">Đến ngày</label>
+        <input type="date" name="to" class="form-control" value="<?= e($toDate) ?>">
+      </div>
+      <div class="col-sm-2">
+        <label class="form-label small mb-1">Tình trạng</label>
+        <select name="avail" class="form-select">
+          <option value="">-- Tất cả --</option>
+          <option value="occupied" <?= $availFilter === 'occupied' ? 'selected' : '' ?>>Đang có khách</option>
+          <option value="vacant" <?= $availFilter === 'vacant' ? 'selected' : '' ?>>Còn trống</option>
+        </select>
+      </div>
+      <div class="col-sm-2">
         <button class="btn btn-outline-secondary w-100"><i class="bi bi-search"></i> Lọc</button>
+      </div>
+      <div class="col-sm-2">
+        <a href="<?= url('/rooms/index.php') ?>" class="btn btn-outline-secondary w-100">Bỏ lọc (hôm nay)</a>
       </div>
     </form>
   </div>
@@ -103,18 +156,29 @@ foreach ($rooms as $r) {
           <tr>
             <th>Mã phòng</th>
             <th>Số phòng ngủ</th>
+            <th>Tình trạng</th>
             <th class="text-end">Thao tác</th>
           </tr>
         </thead>
         <tbody>
           <?php foreach ($zoneRooms as $r): ?>
-            <?php $occupied = isset($occupiedSet[$r['room_code']]); ?>
+            <?php $roomDeals = $occupiedMap[$r['room_code']] ?? []; $occupied = !empty($roomDeals); ?>
             <tr>
               <td class="fw-semibold">
-                <span class="status-dot bg-<?= $occupied ? 'primary' : 'success' ?>" title="<?= $occupied ? 'Đang ở' : 'Còn trống' ?>"></span>
+                <span class="status-dot bg-<?= $occupied ? 'primary' : 'success' ?>" title="<?= $occupied ? 'Đang có khách' : 'Còn trống' ?>"></span>
                 <a href="<?= url('/rooms/form.php?id=' . $r['id']) ?>" class="text-decoration-none text-reset"><?= e($r['room_code']) ?></a>
               </td>
               <td><?= (int)$r['bedrooms'] ?> PN</td>
+              <td class="small">
+                <?php if ($occupied): ?>
+                  <span class="text-primary"><?= e($roomDeals[0]['guest_name']) ?> — đến <?= vndate($roomDeals[0]['checkout_date']) ?></span>
+                  <?php if (count($roomDeals) > 1): ?>
+                    <span class="text-muted">(+<?= count($roomDeals) - 1 ?> lượt khác)</span>
+                  <?php endif; ?>
+                <?php else: ?>
+                  <span class="text-success">Trống</span>
+                <?php endif; ?>
+              </td>
               <td class="text-end">
                 <a href="<?= url('/rooms/form.php?id=' . $r['id']) ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
                 <form method="post" action="<?= url('/rooms/delete.php') ?>" class="d-inline" data-confirm="Xóa phòng <?= e($r['room_code']) ?>?">
