@@ -78,14 +78,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $rooms = $pdo->query('SELECT room_code FROM rooms ORDER BY room_code')->fetchAll(PDO::FETCH_COLUMN);
-$bankAccounts = $pdo->query('SELECT * FROM bank_accounts ORDER BY bank_name')->fetchAll();
+$recipients = $pdo->query('SELECT name FROM billing_recipients ORDER BY name')->fetchAll(PDO::FETCH_COLUMN);
 
 $pageTitle = 'Thêm giao dịch dài hạn';
 require_once __DIR__ . '/../includes/header.php';
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-  <h4 class="mb-0"><i class="bi bi-journal-plus"></i> Thêm giao dịch (Tính tiền dài hạn)</h4>
-  <a href="<?= url('/billing/index.php') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-list"></i> Danh sách</a>
+  <h4 class="mb-0"><i class="bi bi-journal-plus"></i> Thêm giao dịch (Chi phí dài hạn)</h4>
+  <div class="d-flex gap-2">
+    <a href="<?= url('/billing/recipients.php') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-person-lines-fill"></i> Quản lý TK nhận</a>
+    <a href="<?= url('/billing/index.php') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-list"></i> Danh sách</a>
+  </div>
 </div>
 
 <?php foreach ($errors as $err): ?>
@@ -169,7 +172,7 @@ require_once __DIR__ . '/../includes/header.php';
   <?php foreach ($rooms as $r): ?><option value="<?= e($r) ?>"><?php endforeach; ?>
 </datalist>
 <datalist id="billAccList">
-  <?php foreach ($bankAccounts as $ba): ?><option value="<?= e(trim($ba['bank_name'] . ($ba['account_number'] ? ' - ' . $ba['account_number'] : ''))) ?>"><?php endforeach; ?>
+  <?php foreach ($recipients as $rc): ?><option value="<?= e($rc) ?>"><?php endforeach; ?>
 </datalist>
 
 <script>

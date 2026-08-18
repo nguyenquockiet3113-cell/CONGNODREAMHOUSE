@@ -23,7 +23,7 @@ if ($id) {
 }
 
 $rooms = $pdo->query('SELECT room_code FROM rooms ORDER BY room_code')->fetchAll(PDO::FETCH_COLUMN);
-$bankAccounts = $pdo->query('SELECT * FROM bank_accounts ORDER BY bank_name')->fetchAll();
+$recipients = $pdo->query('SELECT name FROM billing_recipients ORDER BY name')->fetchAll(PDO::FETCH_COLUMN);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -152,8 +152,9 @@ require_once __DIR__ . '/../includes/header.php';
           <label class="form-label">TK nhận</label>
           <input type="text" name="receiving_account" class="form-control" list="accListBill" value="<?= e($row['receiving_account']) ?>">
           <datalist id="accListBill">
-            <?php foreach ($bankAccounts as $ba): ?><option value="<?= e(trim($ba['bank_name'] . ($ba['account_number'] ? ' - ' . $ba['account_number'] : ''))) ?>"><?php endforeach; ?>
+            <?php foreach ($recipients as $rc): ?><option value="<?= e($rc) ?>"><?php endforeach; ?>
           </datalist>
+          <div class="form-text"><a href="<?= url('/billing/recipients.php') ?>" target="_blank">+ Quản lý danh sách TK nhận</a></div>
         </div>
         <div class="col-md-6">
           <label class="form-label">Note</label>

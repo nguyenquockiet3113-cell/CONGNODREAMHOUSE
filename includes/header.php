@@ -35,7 +35,7 @@ function nav_active(string $needle, string $path): string
       <div class="sidebar-section">Tài chính</div>
       <a href="<?= url('/deals/short.php') ?>" class="<?= nav_active('/deals/short', $path) ?>"><i class="bi bi-calendar-check"></i> Doanh thu ngắn hạn</a>
       <a href="<?= url('/deals/long.php') ?>" class="<?= nav_active('/deals/long', $path) ?>"><i class="bi bi-receipt"></i> Doanh thu dài hạn</a>
-      <a href="<?= url('/billing/index.php') ?>" class="<?= nav_active('/billing/', $path) ?>"><i class="bi bi-journal-text"></i> Tính tiền dài hạn</a>
+      <a href="<?= url('/billing/index.php') ?>" class="<?= nav_active('/billing/', $path) ?>"><i class="bi bi-journal-text"></i> Chi phí dài hạn</a>
       <a href="<?= url('/expenses/index.php') ?>" class="<?= nav_active('/expenses/', $path) ?>"><i class="bi bi-cash-coin"></i> Chi phí</a>
       <a href="<?= url('/cleaning/index.php') ?>" class="<?= nav_active('/cleaning/', $path) ?>"><i class="bi bi-bucket"></i> Tiền lương vệ sinh</a>
       <a href="<?= url('/funds/index.php') ?>" class="<?= nav_active('/funds/', $path) ?>"><i class="bi bi-journal-text"></i> Sổ quỹ</a>

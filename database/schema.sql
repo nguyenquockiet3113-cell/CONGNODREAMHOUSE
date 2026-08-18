@@ -146,6 +146,16 @@ CREATE TABLE IF NOT EXISTS deal_periods (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
+-- Danh sach TK nhan tu quan ly rieng cho Chi phi dai han (billing_entries)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS billing_recipients (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(150) NOT NULL UNIQUE,
+    note VARCHAR(255) DEFAULT NULL,
+    created_at DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
 -- So giao dich phat sinh dai han (tu do, khong rang buoc vao 1 deal cu the)
 -- Giong so tay "TINH TIEN DAI HAN": moi dong la 1 khoan thu bat ky
 -- (dien nuoc thang, phi lam the, mat the, tien nha...) cho 1 khach/phong.
