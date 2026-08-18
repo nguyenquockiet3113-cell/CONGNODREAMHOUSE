@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $validRows[] = [
             'room_code' => $rc,
             'bedrooms' => ($bedroomsArr[$i] ?? '') !== '' ? (int)$bedroomsArr[$i] : null,
-            'work_type' => trim($workTypes[$i] ?? ''),
+            'work_type' => trim($workTypes[$i] ?? '') !== '' ? trim($workTypes[$i]) : 'OUT',
             'work_item' => trim($workItems[$i] ?? ''),
             'hours' => ($hoursArr[$i] ?? '') !== '' ? (float)$hoursArr[$i] : null,
             'price' => (float)($prices[$i] ?? 0),
@@ -143,7 +143,7 @@ require_once __DIR__ . '/../includes/header.php';
     <td>
       <select name="work_type[]" class="form-select form-select-sm work-type-input">
         <option value="">--</option>
-        <?php foreach ($workTypesList as $wt): ?><option value="<?= e($wt) ?>"><?= e($wt) ?></option><?php endforeach; ?>
+        <?php foreach ($workTypesList as $wt): ?><option value="<?= e($wt) ?>" <?= $wt === 'OUT' ? 'selected' : '' ?>><?= e($wt) ?></option><?php endforeach; ?>
       </select>
     </td>
     <td>
