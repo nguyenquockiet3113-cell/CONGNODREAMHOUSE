@@ -26,6 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($account['bank_name'] === '') $errors[] = 'Vui lòng nhập tên ngân hàng.';
 
+    $openingBalance = (float)($_POST['opening_balance'] ?? 0);
+    $openingDate = $_POST['opening_date'] ?: date('Y-m-d');
+
     if (!$errors) {
         if ($id) {
             $stmt = $pdo->prepare('UPDATE bank_accounts SET bank_name=?, account_number=?, account_holder=?, note=? WHERE id=?');
@@ -35,6 +38,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $now = date('Y-m-d H:i:s');
             $stmt = $pdo->prepare('INSERT INTO bank_accounts (bank_name, account_number, account_holder, note, created_at) VALUES (?,?,?,?,?)');
             $stmt->execute([$account['bank_name'], $account['account_number'], $account['account_holder'], $account['note'], $now]);
+            $newId = (int)$pdo->lastInsertId();
+
+            if ($openingBalance != 0) {
+                $pdo->prepare(
+                    'INSERT INTO fund_ledger (fund_type, bank_account_id, tx_date, content, amount_in, amount_out, created_at) VALUES (?,?,?,?,?,?,?)'
+                )->execute([
+                    'bank', $newId, $openingDate, 'Số dư đầu kỳ',
+                    $openingBalance > 0 ? $openingBalance : 0,
+                    $openingBalance < 0 ? abs($openingBalance) : 0,
+                    $now,
+                ]);
+            }
             flash('success', 'Đã thêm tài khoản.');
         }
         redirect('/bank_accounts/index.php');
@@ -71,6 +86,17 @@ require_once __DIR__ . '/../includes/header.php';
           <label class="form-label">Ghi chú</label>
           <input type="text" name="note" class="form-control" value="<?= e($account['note']) ?>">
         </div>
+        <?php if (!$id): ?>
+        <div class="col-md-4">
+          <label class="form-label">Số dư đầu kỳ (đ)</label>
+          <input type="number" step="1000" name="opening_balance" class="form-control" placeholder="0" value="0">
+          <div class="form-text">Tự tạo giao dịch đầu kỳ trong Sổ quỹ nếu khác 0.</div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Ngày đầu kỳ</label>
+          <input type="date" name="opening_date" class="form-control" value="<?= date('Y-m-d') ?>">
+        </div>
+        <?php endif; ?>
       </div>
       <div class="mt-4 d-flex gap-2">
         <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Lưu</button>

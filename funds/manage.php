@@ -8,6 +8,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['add_fund'])) {
         $name = trim($_POST['name'] ?? '');
         $note = trim($_POST['note'] ?? '');
+        $openingBalance = (float)($_POST['opening_balance'] ?? 0);
+        $openingDate = $_POST['opening_date'] ?: date('Y-m-d');
         if ($name === '') {
             flash('danger', 'Vui lòng nhập tên quỹ.');
         } else {
@@ -16,8 +18,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($dup->fetch()) {
                 flash('danger', 'Tên quỹ này đã tồn tại.');
             } else {
+                $now = date('Y-m-d H:i:s');
                 $pdo->prepare('INSERT INTO funds (name, note, created_at) VALUES (?,?,?)')
-                    ->execute([$name, $note, date('Y-m-d H:i:s')]);
+                    ->execute([$name, $note, $now]);
+                $newFundId = (int)$pdo->lastInsertId();
+
+                if ($openingBalance != 0) {
+                    $pdo->prepare(
+                        'INSERT INTO fund_ledger (fund_type, fund_id, tx_date, content, amount_in, amount_out, created_at) VALUES (?,?,?,?,?,?,?)'
+                    )->execute([
+                        'custom', $newFundId, $openingDate, 'Số dư đầu kỳ',
+                        $openingBalance > 0 ? $openingBalance : 0,
+                        $openingBalance < 0 ? abs($openingBalance) : 0,
+                        $now,
+                    ]);
+                }
                 flash('success', 'Đã thêm sổ quỹ "' . $name . '".');
             }
         }
@@ -89,6 +104,16 @@ require_once __DIR__ . '/../includes/header.php';
           <div class="mb-3">
             <label class="form-label">Ghi chú</label>
             <input type="text" name="note" class="form-control">
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-7">
+              <label class="form-label">Số dư đầu kỳ (đ)</label>
+              <input type="number" step="1000" name="opening_balance" class="form-control" placeholder="0" value="0">
+            </div>
+            <div class="col-md-5">
+              <label class="form-label">Ngày đầu kỳ</label>
+              <input type="date" name="opening_date" class="form-control" value="<?= date('Y-m-d') ?>">
+            </div>
           </div>
           <button type="submit" class="btn btn-success"><i class="bi bi-plus-lg"></i> Thêm sổ quỹ</button>
         </form>
