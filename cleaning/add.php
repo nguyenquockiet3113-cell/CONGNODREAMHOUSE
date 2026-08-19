@@ -155,9 +155,9 @@ require_once __DIR__ . '/../includes/header.php';
       </select>
     </td>
     <td><input type="number" step="0.5" name="hours[]" class="form-control form-control-sm hours-input" style="display:none;"></td>
-    <td><input type="number" step="1000" name="price[]" class="form-control form-control-sm price-input"></td>
-    <td><input type="number" step="1000" name="plus[]" class="form-control form-control-sm" value="0"></td>
-    <td><input type="number" step="1000" name="penalty[]" class="form-control form-control-sm" value="0"></td>
+    <td><input type="number" step="1" name="price[]" class="form-control form-control-sm price-input"></td>
+    <td><input type="number" step="1" name="plus[]" class="form-control form-control-sm" value="0"></td>
+    <td><input type="number" step="1" name="penalty[]" class="form-control form-control-sm" value="0"></td>
     <td><input type="text" name="note[]" class="form-control form-control-sm"></td>
     <td><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-x"></i></button></td>
   </tr>

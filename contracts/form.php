@@ -234,11 +234,11 @@ require_once __DIR__ . '/../includes/header.php';
     <div class="card-body row g-3">
       <div class="col-md-3">
         <label class="form-label">Tiền thuê / tháng (đ)</label>
-        <input type="number" step="1000" name="monthly_rent" class="form-control" value="<?= e($contract['monthly_rent']) ?>">
+        <input type="number" step="1" name="monthly_rent" class="form-control" value="<?= e($contract['monthly_rent']) ?>">
       </div>
       <div class="col-md-3">
         <label class="form-label">Tiền đặt cọc (đ)</label>
-        <input type="number" step="1000" name="deposit_amount" class="form-control" value="<?= e($contract['deposit_amount']) ?>">
+        <input type="number" step="1" name="deposit_amount" class="form-control" value="<?= e($contract['deposit_amount']) ?>">
       </div>
       <div class="col-md-6">
         <label class="form-label">Ghi chú giá thuê</label>

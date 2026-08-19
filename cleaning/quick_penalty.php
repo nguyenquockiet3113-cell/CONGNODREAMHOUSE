@@ -78,7 +78,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
         <div class="col-md-6">
           <label class="form-label">Số tiền phạt (đ) *</label>
-          <input type="number" step="1000" name="penalty" class="form-control" required value="<?= e($entry['penalty']) ?>">
+          <input type="number" step="1" name="penalty" class="form-control" required value="<?= e($entry['penalty']) ?>">
         </div>
         <div class="col-12">
           <label class="form-label">Lý do *</label>

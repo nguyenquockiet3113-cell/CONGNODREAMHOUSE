@@ -115,10 +115,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 foreach (DEAL_FEE_KEYS as $key => $postField) {
                     $feeAmounts[$key] = (float)($_POST[$postField][$i] ?? 0);
                 }
-                $selfPaid = [];
-                foreach (DEAL_FEE_KEYS as $key => $postField) {
-                    if (isset($_POST['period_selfpaid_' . $key][$i])) $selfPaid[] = $key;
-                }
+                // Giu nguyen self_paid_items da luu truoc do (khong con o nhap tren giao dien nay)
+                $selfPaid = array_filter(explode(',', $periods[$i]['self_paid_items'] ?? ''));
                 $utilitiesAmount = 0;
                 foreach ($feeAmounts as $key => $amt) {
                     if (!in_array($key, $selfPaid, true)) $utilitiesAmount += $amt;
@@ -247,11 +245,11 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
         <div class="col-md-3">
           <label class="form-label">Đơn giá (đ) <span class="text-muted small">/đêm hoặc /kỳ 30 ngày</span></label>
-          <input type="number" step="1000" name="price_per_unit" id="price_per_unit" class="form-control" value="<?= e($deal['price_per_unit']) ?>">
+          <input type="number" step="1" name="price_per_unit" id="price_per_unit" class="form-control" value="<?= e($deal['price_per_unit']) ?>">
         </div>
         <div class="col-md-3">
           <label class="form-label">Phụ phí (Charge)</label>
-          <input type="number" step="1000" name="extra_fee" id="extra_fee" class="form-control" value="<?= e($deal['extra_fee']) ?>">
+          <input type="number" step="1" name="extra_fee" id="extra_fee" class="form-control" value="<?= e($deal['extra_fee']) ?>">
         </div>
         <div class="col-md-3">
           <label class="form-label">Thành tiền tổng</label>
@@ -270,7 +268,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
         <div class="col-md-3" id="invoiceDeclaredPriceWrap" style="<?= empty($deal['issue_invoice']) ? 'display:none;' : '' ?>">
           <label class="form-label">Giá kê khai /đêm (đ)</label>
-          <input type="number" step="1000" name="invoice_declared_price" id="invoice_declared_price" class="form-control" value="<?= e($deal['invoice_declared_price']) ?>">
+          <input type="number" step="1" name="invoice_declared_price" id="invoice_declared_price" class="form-control" value="<?= e($deal['invoice_declared_price']) ?>">
         </div>
         <?php if ($id && !empty($deal['issue_invoice'])): ?>
           <div class="col-md-3 d-flex align-items-end">
@@ -282,7 +280,7 @@ require_once __DIR__ . '/../includes/header.php';
       <div class="row g-3 mt-1">
         <div class="col-md-3">
           <label class="form-label">Tiền cọc (đ)</label>
-          <input type="number" step="1000" name="deposit_amount" id="deposit_amount" class="form-control" value="<?= e($deal['deposit_amount']) ?>">
+          <input type="number" step="1" name="deposit_amount" id="deposit_amount" class="form-control" value="<?= e($deal['deposit_amount']) ?>">
         </div>
         <div class="col-md-3">
           <label class="form-label">Ngày cọc</label>
@@ -360,22 +358,19 @@ require_once __DIR__ . '/../includes/header.php';
                     <div class="small text-muted"><?= e(deal_period_label($p['period_index'], $p['period_start'])) ?></div>
                     <div class="small">Từ <?= vndate($p['period_start']) ?> đến <?= vndate($p['period_end']) ?></div>
                   </td>
-                  <td><input type="number" step="1000" name="period_rent[]" class="form-control form-control-sm p-rent" value="<?= e($p['rent_amount']) ?>"></td>
-                  <td><input type="number" step="1000" name="period_deposit[]" class="form-control form-control-sm p-deposit" value="<?= e($p['deposit_amount']) ?>"></td>
+                  <td><input type="number" step="1" name="period_rent[]" class="form-control form-control-sm p-rent" value="<?= e($p['rent_amount']) ?>"></td>
+                  <td><input type="number" step="1" name="period_deposit[]" class="form-control form-control-sm p-deposit" value="<?= e($p['deposit_amount']) ?>"></td>
                   <?php
                     $periodDbCols = ['electricity' => 'electricity_amount', 'water' => 'water_amount', 'management' => 'management_fee_amount', 'internet' => 'internet_amount', 'cleaning' => 'cleaning_fee_amount', 'vehicle' => 'vehicle_fee_amount', 'other' => 'other_fee_amount'];
                     $selfPaidSet = array_filter(explode(',', $p['self_paid_items'] ?? ''));
                   ?>
                   <?php foreach (DEAL_FEE_KEYS as $feeKey => $postField): ?>
                     <td>
-                      <input type="number" step="1000" name="<?= e($postField) ?>[]" data-feekey="<?= e($feeKey) ?>" class="form-control form-control-sm p-fee <?= in_array($feeKey, $selfPaidSet, true) ? 'p-fee-selfpaid' : '' ?>" value="<?= e($p[$periodDbCols[$feeKey]] ?? 0) ?>">
-                      <label class="small text-muted d-block mt-1 mb-0" style="white-space:nowrap;">
-                        <input type="checkbox" name="period_selfpaid_<?= e($feeKey) ?>[<?= $i ?>]" class="form-check-input p-selfpaid" <?= in_array($feeKey, $selfPaidSet, true) ? 'checked' : '' ?>> KH tự đóng
-                      </label>
+                      <input type="number" step="1" name="<?= e($postField) ?>[]" data-feekey="<?= e($feeKey) ?>" class="form-control form-control-sm p-fee <?= in_array($feeKey, $selfPaidSet, true) ? 'p-fee-selfpaid' : '' ?>" value="<?= e($p[$periodDbCols[$feeKey]] ?? 0) ?>">
                     </td>
                   <?php endforeach; ?>
                   <td class="text-end fw-semibold p-total">0 đ</td>
-                  <td><input type="number" step="1000" name="period_paid[]" class="form-control form-control-sm p-paid" value="<?= e($p['paid_amount']) ?>"></td>
+                  <td><input type="number" step="1" name="period_paid[]" class="form-control form-control-sm p-paid" value="<?= e($p['paid_amount']) ?>"></td>
                   <td class="text-end p-remain">0 đ</td>
                   <td><input type="text" name="period_note[]" class="form-control form-control-sm" value="<?= e($p['note'] ?? '') ?>" placeholder="VD: gồm internet, xe..."></td>
                   <td><a href="<?= url('/deals/bill.php?deal_id=' . $id . '&period_id=' . $p['id']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary" title="Xem/in bill"><i class="bi bi-printer"></i></a></td>
@@ -475,7 +470,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <input type="hidden" name="payment_id" value="<?= $p['id'] ?>">
                   <input type="hidden" name="deal_id" value="<?= $id ?>">
                   <input type="date" name="payment_date" class="form-control form-control-sm" style="width:150px;" value="<?= e($p['payment_date']) ?>" required>
-                  <input type="number" step="1000" name="amount" class="form-control form-control-sm" style="width:140px;" value="<?= e($p['amount']) ?>" required>
+                  <input type="number" step="1" name="amount" class="form-control form-control-sm" style="width:140px;" value="<?= e($p['amount']) ?>" required>
                   <select name="method" class="form-select form-select-sm" style="width:140px;">
                     <option value="chuyen_khoan" <?= $p['method'] === 'chuyen_khoan' ? 'selected' : '' ?>>Chuyển khoản</option>
                     <option value="tien_mat" <?= $p['method'] === 'tien_mat' ? 'selected' : '' ?>>Tiền mặt</option>
@@ -523,7 +518,7 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
       <div class="col-md-3">
         <label class="form-label small mb-1">Số tiền (đ)</label>
-        <input type="number" step="1000" name="amount" class="form-control" required>
+        <input type="number" step="1" name="amount" class="form-control" required>
       </div>
       <div class="col-md-2">
         <label class="form-label small mb-1">Hình thức</label>
@@ -558,17 +553,15 @@ var periodsTableBody = document.querySelector('#periodsTable tbody');
 function fmtVnd(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n)) + ' đ'; }
 function recalcPeriodRow(row) {
   var val = function (cls) { return parseFloat(row.querySelector('.' + cls) ? row.querySelector('.' + cls).value : 0) || 0; };
-  var rent = val('p-rent'), deposit = val('p-deposit');
+  var rent = val('p-rent');
   var fees = 0;
   row.querySelectorAll('.p-fee').forEach(function (inp) {
-    var cb = inp.closest('td').querySelector('.p-selfpaid');
-    var selfPaid = !!(cb && cb.checked);
-    inp.classList.toggle('text-decoration-line-through', selfPaid);
+    var selfPaid = inp.classList.contains('p-fee-selfpaid');
     inp.title = selfPaid ? 'Khách tự đóng - không tính vào công nợ công ty' : '';
     if (!selfPaid) fees += parseFloat(inp.value) || 0;
   });
   var paid = val('p-paid');
-  var total = rent + deposit + fees;
+  var total = rent + fees;
   row.querySelector('.p-total').textContent = fmtVnd(total);
   var remainCell = row.querySelector('.p-remain');
   var remain = total - paid;
@@ -578,12 +571,6 @@ function recalcPeriodRow(row) {
 if (periodsTableBody) {
   periodsTableBody.querySelectorAll('.period-row').forEach(recalcPeriodRow);
   periodsTableBody.addEventListener('input', function (e) {
-    var row = e.target.closest('.period-row');
-    if (row) recalcPeriodRow(row);
-    if (typeof recalc === 'function') recalc();
-  });
-  periodsTableBody.addEventListener('change', function (e) {
-    if (!e.target.classList.contains('p-selfpaid')) return;
     var row = e.target.closest('.period-row');
     if (row) recalcPeriodRow(row);
     if (typeof recalc === 'function') recalc();

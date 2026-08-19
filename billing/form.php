@@ -118,13 +118,13 @@ require_once __DIR__ . '/../includes/header.php';
 
       <hr>
       <div class="row g-3">
-        <div class="col-md-3"><label class="form-label">Điện</label><input type="number" step="1000" name="electricity_amount" id="f_electricity" class="form-control b-fee" value="<?= e($row['electricity_amount']) ?>"></div>
-        <div class="col-md-3"><label class="form-label">Nước</label><input type="number" step="1000" name="water_amount" id="f_water" class="form-control b-fee" value="<?= e($row['water_amount']) ?>"></div>
-        <div class="col-md-3"><label class="form-label">Phí quản lý</label><input type="number" step="1000" name="management_fee_amount" id="f_mgmt" class="form-control b-fee" value="<?= e($row['management_fee_amount']) ?>"></div>
-        <div class="col-md-3"><label class="form-label">Internet</label><input type="number" step="1000" name="internet_amount" id="f_internet" class="form-control b-fee" value="<?= e($row['internet_amount']) ?>"></div>
-        <div class="col-md-3"><label class="form-label">Phí xe</label><input type="number" step="1000" name="vehicle_fee_amount" id="f_vehicle" class="form-control b-fee" value="<?= e($row['vehicle_fee_amount']) ?>"></div>
-        <div class="col-md-3"><label class="form-label">Phí khác</label><input type="number" step="1000" name="other_fee_amount" id="f_other" class="form-control b-fee" value="<?= e($row['other_fee_amount']) ?>"></div>
-        <div class="col-md-3"><label class="form-label">Thẻ nhà <span class="text-muted small">(có thể âm)</span></label><input type="number" step="1000" name="card_fee_amount" id="f_card" class="form-control b-fee" value="<?= e($row['card_fee_amount']) ?>"></div>
+        <div class="col-md-3"><label class="form-label">Điện</label><input type="number" step="1" name="electricity_amount" id="f_electricity" class="form-control b-fee" value="<?= e($row['electricity_amount']) ?>"></div>
+        <div class="col-md-3"><label class="form-label">Nước</label><input type="number" step="1" name="water_amount" id="f_water" class="form-control b-fee" value="<?= e($row['water_amount']) ?>"></div>
+        <div class="col-md-3"><label class="form-label">Phí quản lý</label><input type="number" step="1" name="management_fee_amount" id="f_mgmt" class="form-control b-fee" value="<?= e($row['management_fee_amount']) ?>"></div>
+        <div class="col-md-3"><label class="form-label">Internet</label><input type="number" step="1" name="internet_amount" id="f_internet" class="form-control b-fee" value="<?= e($row['internet_amount']) ?>"></div>
+        <div class="col-md-3"><label class="form-label">Phí xe</label><input type="number" step="1" name="vehicle_fee_amount" id="f_vehicle" class="form-control b-fee" value="<?= e($row['vehicle_fee_amount']) ?>"></div>
+        <div class="col-md-3"><label class="form-label">Phí khác</label><input type="number" step="1" name="other_fee_amount" id="f_other" class="form-control b-fee" value="<?= e($row['other_fee_amount']) ?>"></div>
+        <div class="col-md-3"><label class="form-label">Thẻ nhà <span class="text-muted small">(có thể âm)</span></label><input type="number" step="1" name="card_fee_amount" id="f_card" class="form-control b-fee" value="<?= e($row['card_fee_amount']) ?>"></div>
         <div class="col-md-3">
           <label class="form-label">Tổng tiền</label>
           <input type="text" id="totalDisplay" class="form-control fw-semibold" disabled>
@@ -133,7 +133,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <hr>
       <div class="row g-3">
-        <div class="col-md-3"><label class="form-label">Tiền cọc trừ</label><input type="number" step="1000" name="deposit_used" id="f_deposit" class="form-control" value="<?= e($row['deposit_used']) ?>"></div>
+        <div class="col-md-3"><label class="form-label">Tiền cọc trừ</label><input type="number" step="1" name="deposit_used" id="f_deposit" class="form-control" value="<?= e($row['deposit_used']) ?>"></div>
         <div class="col-md-3">
           <label class="form-label">Thanh toán (= Tổng - Cọc)</label>
           <input type="text" id="settleDisplay" class="form-control fw-semibold" disabled>

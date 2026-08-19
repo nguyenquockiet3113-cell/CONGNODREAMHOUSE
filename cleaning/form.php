@@ -130,16 +130,16 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
         <div class="col-md-2">
           <label class="form-label">Price (đ)</label>
-          <input type="number" step="1000" name="price" id="price" class="form-control" value="<?= e($log['price']) ?>">
+          <input type="number" step="1" name="price" id="price" class="form-control" value="<?= e($log['price']) ?>">
         </div>
 
         <div class="col-md-2">
           <label class="form-label">Plus - thưởng (đ)</label>
-          <input type="number" step="1000" name="plus" class="form-control" value="<?= e($log['plus']) ?>">
+          <input type="number" step="1" name="plus" class="form-control" value="<?= e($log['plus']) ?>">
         </div>
         <div class="col-md-2">
           <label class="form-label">Phạt (đ)</label>
-          <input type="number" step="1000" name="penalty" class="form-control" value="<?= e($log['penalty']) ?>">
+          <input type="number" step="1" name="penalty" class="form-control" value="<?= e($log['penalty']) ?>">
         </div>
 
         <div class="col-12">

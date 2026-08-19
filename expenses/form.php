@@ -89,7 +89,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
         <div class="col-md-3">
           <label class="form-label">Số tiền (đ) *</label>
-          <input type="number" step="1000" name="amount" class="form-control" required value="<?= e($expense['amount']) ?>">
+          <input type="number" step="1" name="amount" class="form-control" required value="<?= e($expense['amount']) ?>">
         </div>
         <div class="col-md-4">
           <label class="form-label">Chi qua tài khoản</label>

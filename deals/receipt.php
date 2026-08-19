@@ -111,25 +111,25 @@ $pageTitle = 'Biên nhận ' . $deal['room_code'];
         <td class="text-center">2</td>
         <td>Tiền điện/ Electricity bill</td>
         <td></td><td></td><td></td><td></td><td></td>
-        <td class="text-end"><input type="number" step="1000" class="rc-cell-input rc-line-input" value="0"></td>
+        <td class="text-end"><input type="number" step="1" class="rc-cell-input rc-line-input" value="0"></td>
       </tr>
       <tr>
         <td class="text-center">3</td>
         <td>Water and management bill</td>
         <td></td><td></td><td></td><td></td><td></td>
-        <td class="text-end"><input type="number" step="1000" class="rc-cell-input rc-line-input" value="0"></td>
+        <td class="text-end"><input type="number" step="1" class="rc-cell-input rc-line-input" value="0"></td>
       </tr>
       <tr>
         <td class="text-center">4</td>
         <td>Wifi/internet</td>
         <td></td><td></td><td></td><td></td><td></td>
-        <td class="text-end"><input type="number" step="1000" class="rc-cell-input rc-line-input" value="0"></td>
+        <td class="text-end"><input type="number" step="1" class="rc-cell-input rc-line-input" value="0"></td>
       </tr>
       <tr>
         <td class="text-center">5</td>
         <td><input type="text" class="rc-cell-input" style="text-align:left;" placeholder="(khoản khác nếu có)"></td>
         <td></td><td></td><td></td><td></td><td></td>
-        <td class="text-end"><input type="number" step="1000" class="rc-cell-input rc-line-input" value="0"></td>
+        <td class="text-end"><input type="number" step="1" class="rc-cell-input rc-line-input" value="0"></td>
       </tr>
       <tr class="rc-total-row">
         <td colspan="7" class="text-center">TOTAL:</td>

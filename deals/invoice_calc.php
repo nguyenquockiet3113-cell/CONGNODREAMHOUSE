@@ -89,7 +89,7 @@ if ($hasDeclaredPrice) {
     <form method="post">
       <?= csrf_field() ?>
       <label>Giá kê khai trên hóa đơn (đ/đêm)</label>
-      <input type="number" step="1000" name="invoice_declared_price" required autofocus>
+      <input type="number" step="1" name="invoice_declared_price" required autofocus>
       <button type="submit">Tính bảng kê</button>
     </form>
   </div>
@@ -176,7 +176,7 @@ if ($hasDeclaredPrice) {
   <form method="post" id="editPriceForm" style="display:none; max-width:400px;">
     <?= csrf_field() ?>
     <div style="display:flex; gap:8px;">
-      <input type="number" step="1000" name="invoice_declared_price" value="<?= e($deal['invoice_declared_price']) ?>">
+      <input type="number" step="1" name="invoice_declared_price" value="<?= e($deal['invoice_declared_price']) ?>">
       <button type="submit">Lưu</button>
     </div>
   </form>

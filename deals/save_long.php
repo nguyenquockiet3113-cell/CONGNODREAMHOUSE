@@ -62,17 +62,9 @@ $pdo->prepare('INSERT INTO deals (' . implode(',', $cols) . ") VALUES ($placehol
 $dealId = (int)$pdo->lastInsertId();
 
 if ($dealType === 'dai_han') {
+    // Tien coc chi de giu cho (phong hoi khi tra phong), khong tinh vao tien nha
+    // can thu va khong tu dong ghi nhan la da thanh toan.
     generate_deal_periods($pdo, $dealId, $checkin, $checkout, $price, $deposit);
-    if ($deposit > 0) {
-        // Coc da thu ngay khi ky -> ghi nhan luon la da thanh toan cho ky 1 (khop voi cot deposit_amount cua ky 1)
-        $pdo->prepare('UPDATE deal_periods SET paid_amount = ? WHERE deal_id = ? AND period_index = 1')
-            ->execute([$deposit, $dealId]);
-    }
-}
-
-if ($deposit > 0) {
-    $pdo->prepare('INSERT INTO deal_payments (deal_id, payment_date, amount, method, note, created_at) VALUES (?,?,?,?,?,?)')
-        ->execute([$dealId, date('Y-m-d'), $deposit, 'chuyen_khoan', 'Tiền cọc khi ký', $now]);
 }
 
 recompute_deal_paid_amount($pdo, $dealId);

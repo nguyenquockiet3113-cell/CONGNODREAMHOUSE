@@ -45,7 +45,7 @@ if ($month !== '') {
 $nextDueByDeal = [];
 foreach ($deals as $d) {
     foreach ($periodsByDeal[$d['id']] ?? [] as $p) {
-        $periodTotal = (float)$p['rent_amount'] + (float)$p['deposit_amount'] + (float)$p['utilities_amount'];
+        $periodTotal = (float)$p['rent_amount'] + (float)$p['utilities_amount'];
         $remain = $periodTotal - (float)$p['paid_amount'];
         if ($remain > 0.5) {
             $days = (int)round((strtotime($p['period_end']) - strtotime($today)) / 86400);
@@ -84,7 +84,7 @@ foreach ($deals as $d) {
     $periods = $periodsByDeal[$d['id']] ?? [];
     $total = 0; $paid = 0;
     foreach ($periods as $p) {
-        $total += (float)$p['rent_amount'] + (float)$p['deposit_amount'] + (float)$p['utilities_amount'];
+        $total += (float)$p['rent_amount'] + (float)$p['utilities_amount'];
         $paid += (float)$p['paid_amount'];
     }
     $dealStats[$d['id']] = ['total' => $total, 'paid' => $paid, 'count' => count($periods)];
@@ -241,7 +241,7 @@ foreach ($deals as $d) {
             </thead>
             <tbody>
               <?php foreach ($periods as $p): ?>
-                <?php $pt = (float)$p['rent_amount'] + (float)$p['deposit_amount'] + (float)$p['utilities_amount']; $pr = $pt - (float)$p['paid_amount']; ?>
+                <?php $pt = (float)$p['rent_amount'] + (float)$p['utilities_amount']; $pr = $pt - (float)$p['paid_amount']; ?>
                 <tr>
                   <td><?= e(deal_period_label((int)$p['period_index'], $p['period_start'])) ?></td>
                   <td><?= vndate($p['period_start']) ?> - <?= vndate($p['period_end']) ?></td>
@@ -318,12 +318,12 @@ foreach ($deals as $d) {
             </div>
             <div class="col-md-3">
               <label class="form-label">Giá (đ/tháng)</label>
-              <input type="number" step="1000" name="price_per_unit" id="lr_price" class="form-control" value="0">
+              <input type="number" step="1" name="price_per_unit" id="lr_price" class="form-control" value="0">
             </div>
             <div class="col-md-3">
               <label class="form-label">Tiền cọc (đ)</label>
-              <input type="number" step="1000" name="deposit_amount" id="lr_deposit" class="form-control" value="0">
-              <div class="form-text">Tự ghi nhận là đã thanh toán khi lưu.</div>
+              <input type="number" step="1" name="deposit_amount" id="lr_deposit" class="form-control" value="0">
+              <div class="form-text">Chỉ để giữ chỗ, không tính vào tiền nhà cần thu.</div>
             </div>
             <div class="col-md-3 d-flex align-items-center gap-2 mt-4">
               <div class="form-check">
@@ -396,9 +396,7 @@ function lrRecalc() {
   var vatPercent = applyVat ? (parseFloat(document.getElementById('lr_vat_percent').value) || 0) : 0;
   var vatAmount = applyVat ? Math.round(rentTotal * vatPercent / 100) : 0;
 
-  var deposit = parseFloat(document.getElementById('lr_deposit').value) || 0;
-
-  document.getElementById('lr_total_display').value = lrFmt(rentTotal + vatAmount + deposit);
+  document.getElementById('lr_total_display').value = lrFmt(rentTotal + vatAmount);
 }
 
 ['lr_checkin', 'lr_checkout', 'lr_price', 'lr_deposit', 'lr_vat_percent'].forEach(function (id) {

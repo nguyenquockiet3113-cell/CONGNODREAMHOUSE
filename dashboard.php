@@ -78,7 +78,7 @@ $sql = apply_deal_filters($sql, $params, $filterZone, $filterRoomCode);
 $stmt = $pdo->prepare($sql); $stmt->execute($params);
 $owedShort = (float)$stmt->fetch()['s'];
 
-$sql = "SELECT COALESCE(SUM(dp.rent_amount + dp.deposit_amount + dp.utilities_amount - dp.paid_amount),0) s
+$sql = "SELECT COALESCE(SUM(dp.rent_amount + dp.utilities_amount - dp.paid_amount),0) s
         FROM deal_periods dp JOIN deals d ON d.id = dp.deal_id WHERE d.deal_type = 'dai_han'";
 $params = [];
 if ($filterZone !== '') { $sql .= ' AND d.zone = ?'; $params[] = $filterZone; }

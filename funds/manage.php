@@ -108,7 +108,7 @@ require_once __DIR__ . '/../includes/header.php';
           <div class="row g-3 mb-3">
             <div class="col-md-7">
               <label class="form-label">Số dư đầu kỳ (đ)</label>
-              <input type="number" step="1000" name="opening_balance" class="form-control" placeholder="0" value="0">
+              <input type="number" step="1" name="opening_balance" class="form-control" placeholder="0" value="0">
             </div>
             <div class="col-md-5">
               <label class="form-label">Ngày đầu kỳ</label>

@@ -148,15 +148,15 @@ require_once __DIR__ . '/../includes/header.php';
     <td><input type="text" name="room_code[]" class="form-control form-control-sm" list="billRoomList"></td>
     <td><input type="text" name="content[]" class="form-control form-control-sm" placeholder="VD: Điện nước tháng 8"></td>
     <td><input type="number" step="0.5" name="quantity[]" class="form-control form-control-sm" value="1"></td>
-    <td><input type="number" step="1000" name="electricity_amount[]" class="form-control form-control-sm b-fee"></td>
-    <td><input type="number" step="1000" name="water_amount[]" class="form-control form-control-sm b-fee"></td>
-    <td><input type="number" step="1000" name="management_fee_amount[]" class="form-control form-control-sm b-fee"></td>
-    <td><input type="number" step="1000" name="internet_amount[]" class="form-control form-control-sm b-fee"></td>
-    <td><input type="number" step="1000" name="vehicle_fee_amount[]" class="form-control form-control-sm b-fee"></td>
-    <td><input type="number" step="1000" name="other_fee_amount[]" class="form-control form-control-sm b-fee"></td>
-    <td><input type="number" step="1000" name="card_fee_amount[]" class="form-control form-control-sm b-fee"></td>
+    <td><input type="number" step="1" name="electricity_amount[]" class="form-control form-control-sm b-fee"></td>
+    <td><input type="number" step="1" name="water_amount[]" class="form-control form-control-sm b-fee"></td>
+    <td><input type="number" step="1" name="management_fee_amount[]" class="form-control form-control-sm b-fee"></td>
+    <td><input type="number" step="1" name="internet_amount[]" class="form-control form-control-sm b-fee"></td>
+    <td><input type="number" step="1" name="vehicle_fee_amount[]" class="form-control form-control-sm b-fee"></td>
+    <td><input type="number" step="1" name="other_fee_amount[]" class="form-control form-control-sm b-fee"></td>
+    <td><input type="number" step="1" name="card_fee_amount[]" class="form-control form-control-sm b-fee"></td>
     <td class="text-end fw-semibold b-total">0 đ</td>
-    <td><input type="number" step="1000" name="deposit_used[]" class="form-control form-control-sm b-deposit"></td>
+    <td><input type="number" step="1" name="deposit_used[]" class="form-control form-control-sm b-deposit"></td>
     <td class="text-end fw-semibold b-settle">0 đ</td>
     <td class="text-center"><input type="checkbox" name="is_done[]" class="form-check-input"></td>
     <td><input type="date" name="customer_paid_date[]" class="form-control form-control-sm"></td>

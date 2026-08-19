@@ -65,7 +65,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <option value="gio" <?= $p['unit'] === 'gio' ? 'selected' : '' ?>>/ giờ</option>
                 </select>
               </td>
-              <td><input type="number" step="1000" name="unit_price[]" class="form-control form-control-sm" value="<?= e($p['unit_price']) ?>"></td>
+              <td><input type="number" step="1" name="unit_price[]" class="form-control form-control-sm" value="<?= e($p['unit_price']) ?>"></td>
               <td>
                 <button type="submit" form="deleteForm<?= $p['id'] ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Xóa mục giá này?')"><i class="bi bi-trash"></i></button>
               </td>
@@ -108,7 +108,7 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
       <div class="col-md-2">
         <label class="form-label small mb-1">Đơn giá (đ)</label>
-        <input type="number" step="1000" name="new_unit_price" class="form-control" required>
+        <input type="number" step="1" name="new_unit_price" class="form-control" required>
       </div>
       <div class="col-md-2">
         <button class="btn btn-success w-100"><i class="bi bi-plus-lg"></i> Thêm</button>

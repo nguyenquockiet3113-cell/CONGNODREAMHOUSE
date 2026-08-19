@@ -89,7 +89,7 @@ require_once __DIR__ . '/../includes/header.php';
         <?php if (!$id): ?>
         <div class="col-md-4">
           <label class="form-label">Số dư đầu kỳ (đ)</label>
-          <input type="number" step="1000" name="opening_balance" class="form-control" placeholder="0" value="0">
+          <input type="number" step="1" name="opening_balance" class="form-control" placeholder="0" value="0">
           <div class="form-text">Tự tạo giao dịch đầu kỳ trong Sổ quỹ nếu khác 0.</div>
         </div>
         <div class="col-md-4">

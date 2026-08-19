@@ -155,11 +155,11 @@ require_once __DIR__ . '/../includes/header.php';
 
         <div class="col-md-3">
           <label class="form-label">Thu (đ)</label>
-          <input type="number" step="1000" name="amount_in" class="form-control" value="<?= e($entry['amount_in']) ?>">
+          <input type="number" step="1" name="amount_in" class="form-control" value="<?= e($entry['amount_in']) ?>">
         </div>
         <div class="col-md-3">
           <label class="form-label">Chi (đ)</label>
-          <input type="number" step="1000" name="amount_out" class="form-control" value="<?= e($entry['amount_out']) ?>">
+          <input type="number" step="1" name="amount_out" class="form-control" value="<?= e($entry['amount_out']) ?>">
         </div>
         <div class="col-md-3 d-flex align-items-end">
           <div class="form-check">
