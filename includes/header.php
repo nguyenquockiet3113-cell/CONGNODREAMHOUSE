@@ -29,7 +29,6 @@ if (localStorage.getItem('sidebarCollapsed') === '1') {
     <div class="sidebar-brand">
       <i class="bi bi-building"></i>
       <span class="nav-label"><?= APP_NAME ?></span>
-      <button type="button" class="sidebar-collapse-btn d-none d-lg-inline-flex" id="sidebarCollapseToggle" title="Thu gọn/mở rộng menu"><i class="bi bi-chevron-left"></i></button>
     </div>
     <nav class="sidebar-nav">
       <a href="<?= url('/dashboard.php') ?>" class="<?= nav_active('dashboard.php', $path) ?>" title="Tổng quan"><i class="bi bi-speedometer2"></i> <span class="nav-label">Tổng quan</span></a>
@@ -86,7 +85,7 @@ if (localStorage.getItem('sidebarCollapsed') === '1') {
 
   <div class="main-col">
     <header class="topbar">
-      <button class="btn btn-sm btn-outline-secondary d-lg-none" id="sidebarToggle"><i class="bi bi-list"></i></button>
+      <button class="sidebar-hamburger-btn" id="sidebarToggle" title="Thu gọn/mở rộng menu"><i class="bi bi-list"></i></button>
       <div class="ms-auto d-flex align-items-center gap-3">
         <span class="text-muted small"><i class="bi bi-person-circle"></i> <?= e($currentUser['full_name']) ?> <span class="badge bg-light text-dark border"><?= $currentUser['role'] === 'admin' ? 'Quản trị' : 'Nhân viên' ?></span></span>
         <a href="<?= url('/logout.php') ?>" class="btn btn-sm btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>

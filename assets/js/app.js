@@ -3,22 +3,14 @@ document.addEventListener('DOMContentLoaded', function () {
   var sidebar = document.getElementById('sidebar');
   if (toggle && sidebar) {
     toggle.addEventListener('click', function () {
-      sidebar.classList.toggle('show');
-    });
-  }
-
-  var collapseBtn = document.getElementById('sidebarCollapseToggle');
-  if (collapseBtn) {
-    var collapseIcon = collapseBtn.querySelector('i');
-    var syncCollapseIcon = function () {
-      var collapsed = document.documentElement.classList.contains('sidebar-collapsed');
-      collapseIcon.className = collapsed ? 'bi bi-chevron-right' : 'bi bi-chevron-left';
-    };
-    syncCollapseIcon();
-    collapseBtn.addEventListener('click', function () {
-      var collapsed = document.documentElement.classList.toggle('sidebar-collapsed');
-      localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
-      syncCollapseIcon();
+      if (window.innerWidth < 992) {
+        // Man hinh nho: truot sidebar vao/ra
+        sidebar.classList.toggle('show');
+      } else {
+        // Man hinh lon: thu gon sidebar ve dang chi icon, nho trang thai qua localStorage
+        var collapsed = document.documentElement.classList.toggle('sidebar-collapsed');
+        localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
+      }
     });
   }
 
