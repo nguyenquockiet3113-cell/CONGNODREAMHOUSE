@@ -93,13 +93,12 @@ require_once __DIR__ . '/../includes/header.php';
           <th class="text-end">ĐÃ CK/TM</th>
           <th class="text-end">Payment</th>
           <th>Đã TT</th>
-          <th>TK nhận</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         <?php if (!$deals): ?>
-          <tr><td colspan="16" class="text-center text-muted py-4">Chưa có deal ngắn hạn nào.</td></tr>
+          <tr><td colspan="15" class="text-center text-muted py-4">Chưa có deal ngắn hạn nào.</td></tr>
         <?php endif; ?>
         <?php foreach ($deals as $d): ?>
           <?php
@@ -122,7 +121,6 @@ require_once __DIR__ . '/../includes/header.php';
             <td class="text-end"><?= money($d['paid_amount']) ?></td>
             <td class="text-end fw-semibold <?= $remain > 0 ? 'text-danger' : '' ?>"><?= money($remain) ?></td>
             <td class="text-center"><?= $d['payment_status'] === 'paid' ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle text-danger"></i>' ?></td>
-            <td class="small"><?= $d['receiving_account'] ? e($d['receiving_account']) : '<span class="text-muted">—</span>' ?></td>
             <td class="text-end">
               <?php if ($d['payment_status'] !== 'paid'): ?>
                 <form method="post" action="<?= url('/deals/mark_paid.php') ?>" class="d-inline" data-confirm="Đánh dấu deal của <?= e($d['guest_name']) ?> đã thu đủ <?= money($remain) ?>?">

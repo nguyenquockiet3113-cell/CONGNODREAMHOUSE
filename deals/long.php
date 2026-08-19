@@ -80,6 +80,7 @@ $rooms = $pdo->query('SELECT room_code, zone, bedrooms FROM rooms ORDER BY room_
 
 $sumTotal = 0; $sumPaid = 0; $totalPeriods = 0;
 $dealStats = [];
+$debtBySale = [];
 foreach ($deals as $d) {
     $periods = $periodsByDeal[$d['id']] ?? [];
     $total = 0; $paid = 0;
@@ -89,7 +90,16 @@ foreach ($deals as $d) {
     }
     $dealStats[$d['id']] = ['total' => $total, 'paid' => $paid, 'count' => count($periods)];
     $sumTotal += $total; $sumPaid += $paid; $totalPeriods += count($periods);
+
+    $saleName = trim($d['guest_name']) !== '' ? trim($d['guest_name']) : '(Chưa đặt tên)';
+    if (!isset($debtBySale[$saleName])) {
+        $debtBySale[$saleName] = ['deal_count' => 0, 'total' => 0, 'paid' => 0];
+    }
+    $debtBySale[$saleName]['deal_count']++;
+    $debtBySale[$saleName]['total'] += $total;
+    $debtBySale[$saleName]['paid'] += $paid;
 }
+uasort($debtBySale, fn($a, $b) => ($b['total'] - $b['paid']) <=> ($a['total'] - $a['paid']));
 
 $pageTitle = 'Doanh thu dài hạn';
 require_once __DIR__ . '/../includes/header.php';
@@ -177,7 +187,7 @@ foreach ($deals as $d) {
             <th class="text-end">Tổng cộng</th>
             <th class="text-end">Đã thu</th>
             <th class="text-end">Còn lại</th>
-            <th>TK nhận</th>
+            <th>Tài khoản nhận</th>
             <th>Hạn thanh toán</th>
             <th>Tình trạng</th>
             <th class="text-end">Thao tác</th>
@@ -218,6 +228,38 @@ foreach ($deals as $d) {
     </div>
   </div>
 <?php endforeach; ?>
+
+<div class="card mb-4">
+  <div class="card-header">Công nợ tổng hợp theo Sale</div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>Sale</th>
+          <th class="text-end">Số deal</th>
+          <th class="text-end">Tổng cộng</th>
+          <th class="text-end">Đã thu</th>
+          <th class="text-end">Còn nợ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if (!$debtBySale): ?>
+          <tr><td colspan="5" class="text-center text-muted py-4">Chưa có dữ liệu.</td></tr>
+        <?php endif; ?>
+        <?php foreach ($debtBySale as $saleName => $s): ?>
+          <?php $saleRemain = $s['total'] - $s['paid']; ?>
+          <tr>
+            <td class="fw-semibold"><?= e($saleName) ?></td>
+            <td class="text-end"><?= $s['deal_count'] ?></td>
+            <td class="text-end"><?= money($s['total']) ?></td>
+            <td class="text-end text-success"><?= money($s['paid']) ?></td>
+            <td class="text-end fw-semibold <?= $saleRemain > 0 ? 'text-danger' : '' ?>"><?= money($saleRemain) ?></td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <?php foreach ($deals as $d): ?>
   <?php $periods = $periodsByDeal[$d['id']] ?? []; ?>

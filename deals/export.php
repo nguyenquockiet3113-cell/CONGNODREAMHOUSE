@@ -22,11 +22,11 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $deals = $stmt->fetchAll();
 
-$headers = ['Note', 'Sale', 'Code', 'PN', 'TIME', 'Price/unit', 'IN', 'OUT', 'Total', 'Charge', 'TỔNG', 'ĐÃ CK/TM', 'Payment', 'Đã TT', 'TK nhận'];
+$headers = ['Note', 'Sale', 'Code', 'PN', 'TIME', 'Price/unit', 'IN', 'OUT', 'Total', 'Charge', 'TỔNG', 'ĐÃ CK/TM', 'Payment', 'Đã TT', 'Tài khoản nhận'];
 $rows = [];
 foreach ($deals as $d) {
     $total = (float)$d['nights'] * (float)$d['price_per_unit'];
-    $grand = $total + (float)$d['extra_fee'];
+    $grand = (float)$d['total_amount'];
     $remain = $grand - (float)$d['paid_amount'];
     $rows[] = [
         $d['note'], $d['guest_name'], $d['room_code'], $d['bedrooms'], $d['nights'], (float)$d['price_per_unit'],

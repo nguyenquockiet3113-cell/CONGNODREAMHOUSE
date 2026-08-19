@@ -279,43 +279,38 @@ require_once __DIR__ . '/../includes/header.php';
         <?php endif; ?>
       </div>
 
-      <div class="mt-2">
-        <a href="#advancedFields" data-bs-toggle="collapse" class="small"><i class="bi bi-chevron-down"></i> Thêm chi tiết thanh toán (cọc, hình thức, tài khoản nhận)</a>
-        <div class="collapse<?= ($deal['deposit_amount'] || $deal['deposit_date'] || $deal['receiving_account']) ? ' show' : '' ?> mt-2" id="advancedFields">
-          <div class="row g-3">
-            <div class="col-md-3">
-              <label class="form-label">Tiền cọc (đ)</label>
-              <input type="number" step="1000" name="deposit_amount" id="deposit_amount" class="form-control" value="<?= e($deal['deposit_amount']) ?>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Ngày cọc</label>
-              <input type="date" name="deposit_date" class="form-control" value="<?= e($deal['deposit_date']) ?>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Hình thức thanh toán</label>
-              <select name="payment_method" class="form-select">
-                <option value="chuyen_khoan" <?= $deal['payment_method'] === 'chuyen_khoan' ? 'selected' : '' ?>>Chuyển khoản</option>
-                <option value="tien_mat" <?= $deal['payment_method'] === 'tien_mat' ? 'selected' : '' ?>>Tiền mặt</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Tài khoản nhận</label>
-              <?php
-                $recvOptions = array_map(fn($ba) => trim($ba['bank_name'] . ($ba['account_number'] ? ' - ' . $ba['account_number'] : '')), $bankAccounts);
-                $recvCurrent = (string)$deal['receiving_account'];
-              ?>
-              <select name="receiving_account" class="form-select">
-                <option value="">-- Chưa chọn --</option>
-                <?php foreach ($recvOptions as $opt): ?>
-                  <option value="<?= e($opt) ?>" <?= $recvCurrent === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
-                <?php endforeach; ?>
-                <?php if ($recvCurrent !== '' && !in_array($recvCurrent, $recvOptions, true)): ?>
-                  <option value="<?= e($recvCurrent) ?>" selected><?= e($recvCurrent) ?></option>
-                <?php endif; ?>
-              </select>
-              <div class="form-text"><a href="<?= url('/bank_accounts/index.php') ?>" target="_blank">+ Quản lý danh sách tài khoản nhận</a></div>
-            </div>
-          </div>
+      <div class="row g-3 mt-1">
+        <div class="col-md-3">
+          <label class="form-label">Tiền cọc (đ)</label>
+          <input type="number" step="1000" name="deposit_amount" id="deposit_amount" class="form-control" value="<?= e($deal['deposit_amount']) ?>">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Ngày cọc</label>
+          <input type="date" name="deposit_date" class="form-control" value="<?= e($deal['deposit_date']) ?>">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Hình thức thanh toán</label>
+          <select name="payment_method" class="form-select">
+            <option value="chuyen_khoan" <?= $deal['payment_method'] === 'chuyen_khoan' ? 'selected' : '' ?>>Chuyển khoản</option>
+            <option value="tien_mat" <?= $deal['payment_method'] === 'tien_mat' ? 'selected' : '' ?>>Tiền mặt</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Tài khoản nhận</label>
+          <?php
+            $recvOptions = array_map(fn($ba) => trim($ba['bank_name'] . ($ba['account_number'] ? ' - ' . $ba['account_number'] : '')), $bankAccounts);
+            $recvCurrent = (string)$deal['receiving_account'];
+          ?>
+          <select name="receiving_account" class="form-select">
+            <option value="">-- Chưa chọn --</option>
+            <?php foreach ($recvOptions as $opt): ?>
+              <option value="<?= e($opt) ?>" <?= $recvCurrent === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
+            <?php endforeach; ?>
+            <?php if ($recvCurrent !== '' && !in_array($recvCurrent, $recvOptions, true)): ?>
+              <option value="<?= e($recvCurrent) ?>" selected><?= e($recvCurrent) ?></option>
+            <?php endif; ?>
+          </select>
+          <div class="form-text"><a href="<?= url('/bank_accounts/index.php') ?>" target="_blank">+ Quản lý danh sách tài khoản nhận</a></div>
         </div>
       </div>
 
@@ -454,7 +449,7 @@ require_once __DIR__ . '/../includes/header.php';
       <div class="text-muted small mb-3">Chưa có lần thanh toán nào.</div>
     <?php else: ?>
       <table class="table table-sm mb-3 align-middle">
-        <thead><tr><th>Ngày</th><th>Số tiền</th><th>Hình thức</th><th>TK nhận</th><th>Ghi chú</th><th></th></tr></thead>
+        <thead><tr><th>Ngày</th><th>Số tiền</th><th>Hình thức</th><th>Tài khoản nhận</th><th>Ghi chú</th><th></th></tr></thead>
         <tbody>
           <?php foreach ($payments as $p): ?>
             <tr id="payment-view-<?= $p['id'] ?>">
@@ -538,7 +533,7 @@ require_once __DIR__ . '/../includes/header.php';
         </select>
       </div>
       <div class="col-md-3">
-        <label class="form-label small mb-1">TK nhận</label>
+        <label class="form-label small mb-1">Tài khoản nhận</label>
         <select name="receiving_account" class="form-select">
           <option value="">-- Theo deal --</option>
           <?php foreach ($recvOptions as $opt): ?>
