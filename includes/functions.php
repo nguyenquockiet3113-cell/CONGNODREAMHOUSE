@@ -134,6 +134,7 @@ const APP_MODULES = [
     'rooms' => 'Khu & Phòng',
     'contracts' => 'Hợp đồng',
     'deals' => 'Doanh thu ngắn hạn & dài hạn',
+    'debts' => 'Công nợ tổng hợp',
     'billing' => 'Chi phí khác',
     'expenses' => 'Chi phí',
     'cleaning' => 'Tiền lương vệ sinh',

@@ -38,11 +38,14 @@ function nav_active(string $needle, string $path): string
       <?php endif; ?>
       <?php endif; ?>
 
-      <?php if (has_permission('deals') || has_permission('billing') || has_permission('expenses') || has_permission('cleaning') || has_permission('funds') || has_permission('reconciliation') || has_permission('reports')): ?>
+      <?php if (has_permission('deals') || has_permission('debts') || has_permission('billing') || has_permission('expenses') || has_permission('cleaning') || has_permission('funds') || has_permission('reconciliation') || has_permission('reports')): ?>
       <div class="sidebar-section">Tài chính</div>
       <?php if (has_permission('deals')): ?>
       <a href="<?= url('/deals/short.php') ?>" class="<?= nav_active('/deals/short', $path) ?>"><i class="bi bi-calendar-check"></i> Doanh thu ngắn hạn</a>
       <a href="<?= url('/deals/long.php') ?>" class="<?= nav_active('/deals/long', $path) ?>"><i class="bi bi-receipt"></i> Doanh thu dài hạn</a>
+      <?php endif; ?>
+      <?php if (has_permission('debts')): ?>
+      <a href="<?= url('/debts/index.php') ?>" class="<?= nav_active('/debts/', $path) ?>"><i class="bi bi-exclamation-diamond"></i> Công nợ tổng hợp</a>
       <?php endif; ?>
       <?php if (has_permission('billing')): ?>
       <a href="<?= url('/billing/index.php') ?>" class="<?= nav_active('/billing/', $path) ?>"><i class="bi bi-journal-text"></i> Chi phí khác</a>
