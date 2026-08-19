@@ -1,16 +1,20 @@
 document.addEventListener('DOMContentLoaded', function () {
-  var toggle = document.getElementById('sidebarToggle');
+  // Man hinh nho: nut hamburger tren topbar truot sidebar vao/ra
+  var mobileToggle = document.getElementById('sidebarToggle');
   var sidebar = document.getElementById('sidebar');
-  if (toggle && sidebar) {
-    toggle.addEventListener('click', function () {
-      if (window.innerWidth < 992) {
-        // Man hinh nho: truot sidebar vao/ra
-        sidebar.classList.toggle('show');
-      } else {
-        // Man hinh lon: thu gon sidebar ve dang chi icon, nho trang thai qua localStorage
-        var collapsed = document.documentElement.classList.toggle('sidebar-collapsed');
-        localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
-      }
+  if (mobileToggle && sidebar) {
+    mobileToggle.addEventListener('click', function () {
+      sidebar.classList.toggle('show');
+    });
+  }
+
+  // Man hinh lon: nut hamburger ngay tren thanh menu thu gon sidebar ve dang chi icon,
+  // nho trang thai qua localStorage de giu nguyen khi chuyen trang
+  var collapseToggle = document.getElementById('sidebarCollapseToggle');
+  if (collapseToggle) {
+    collapseToggle.addEventListener('click', function () {
+      var collapsed = document.documentElement.classList.toggle('sidebar-collapsed');
+      localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
     });
   }
 

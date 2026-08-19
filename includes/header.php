@@ -27,6 +27,7 @@ if (localStorage.getItem('sidebarCollapsed') === '1') {
 <div class="app-wrapper">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
+      <button type="button" class="sidebar-hamburger-btn d-none d-lg-inline-flex" id="sidebarCollapseToggle" title="Thu gọn/mở rộng menu"><i class="bi bi-list"></i></button>
       <i class="bi bi-building"></i>
       <span class="nav-label"><?= APP_NAME ?></span>
     </div>
@@ -85,7 +86,7 @@ if (localStorage.getItem('sidebarCollapsed') === '1') {
 
   <div class="main-col">
     <header class="topbar">
-      <button class="sidebar-hamburger-btn" id="sidebarToggle" title="Thu gọn/mở rộng menu"><i class="bi bi-list"></i></button>
+      <button class="sidebar-hamburger-btn d-lg-none" id="sidebarToggle" title="Mở/đóng menu"><i class="bi bi-list"></i></button>
       <div class="ms-auto d-flex align-items-center gap-3">
         <span class="text-muted small"><i class="bi bi-person-circle"></i> <?= e($currentUser['full_name']) ?> <span class="badge bg-light text-dark border"><?= $currentUser['role'] === 'admin' ? 'Quản trị' : 'Nhân viên' ?></span></span>
         <a href="<?= url('/logout.php') ?>" class="btn btn-sm btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>
