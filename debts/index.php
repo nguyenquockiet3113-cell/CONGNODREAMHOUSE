@@ -3,11 +3,23 @@ require_once __DIR__ . '/../config/config.php';
 require_login();
 
 $search = trim($_GET['q'] ?? '');
+$today = date('Y-m-d');
 
 // Ngan han: cong no = total_amount - paid_amount
 $shortRows = $pdo->query(
     "SELECT id, guest_name, room_code, checkin_date, checkout_date, total_amount, paid_amount FROM deals WHERE deal_type = 'ngan_han'"
 )->fetchAll();
+
+// Dai han: chi tinh cac ky DA DEN HAN (period_start <= hom nay), ky chua toi khong cong vao cong no
+$longPeriodStmt = $pdo->prepare(
+    "SELECT dp.deal_id, dp.period_index, dp.period_start, dp.period_end, dp.rent_amount, dp.utilities_amount, dp.paid_amount,
+            d.guest_name, d.room_code, d.checkin_date, d.checkout_date
+     FROM deal_periods dp JOIN deals d ON d.id = dp.deal_id
+     WHERE d.deal_type = 'dai_han' AND dp.period_start <= ?
+     ORDER BY d.id, dp.period_index"
+);
+$longPeriodStmt->execute([$today]);
+$longPeriodRows = $longPeriodStmt->fetchAll();
 
 // Chi phi khac: cong no = settle_amount cua cac giao dich chua xu ly (is_done = 0)
 $billingRows = $pdo->query(
@@ -17,7 +29,7 @@ $billingRows = $pdo->query(
 $bySale = [];
 $ensure = function (string $name) use (&$bySale) {
     if (!isset($bySale[$name])) {
-        $bySale[$name] = ['short' => 0.0, 'billing' => 0.0, 'short_rows' => [], 'billing_rows' => []];
+        $bySale[$name] = ['short' => 0.0, 'long' => 0.0, 'billing' => 0.0, 'short_rows' => [], 'long_rows' => [], 'billing_rows' => []];
     }
 };
 
@@ -27,6 +39,29 @@ foreach ($shortRows as $r) {
     $bySale[$name]['short'] += (float)$r['total_amount'] - (float)$r['paid_amount'];
     $bySale[$name]['short_rows'][] = $r;
 }
+
+// Gop cac ky da den han theo tung deal dai han
+$longByDeal = [];
+foreach ($longPeriodRows as $p) {
+    $dealId = $p['deal_id'];
+    if (!isset($longByDeal[$dealId])) {
+        $longByDeal[$dealId] = [
+            'id' => $dealId, 'guest_name' => $p['guest_name'], 'room_code' => $p['room_code'],
+            'checkin_date' => $p['checkin_date'], 'checkout_date' => $p['checkout_date'],
+            'due_period_count' => 0, 'total' => 0.0, 'paid' => 0.0,
+        ];
+    }
+    $longByDeal[$dealId]['due_period_count']++;
+    $longByDeal[$dealId]['total'] += (float)$p['rent_amount'] + (float)$p['utilities_amount'];
+    $longByDeal[$dealId]['paid'] += (float)$p['paid_amount'];
+}
+foreach ($longByDeal as $r) {
+    $name = trim($r['guest_name']) !== '' ? trim($r['guest_name']) : '(Chưa đặt tên)';
+    $ensure($name);
+    $bySale[$name]['long'] += $r['total'] - $r['paid'];
+    $bySale[$name]['long_rows'][] = $r;
+}
+
 foreach ($billingRows as $r) {
     $name = trim($r['guest_name']) !== '' ? trim($r['guest_name']) : '(Chưa đặt tên)';
     $ensure($name);
@@ -35,17 +70,20 @@ foreach ($billingRows as $r) {
 }
 
 // Chi hien nhung Sale con cong no thuc su (chua thu), bo qua da tra du/qua tay
-$bySale = array_filter($bySale, fn($s) => ($s['short'] + $s['billing']) > 0.5);
+$bySale = array_filter($bySale, fn($s) => ($s['short'] + $s['long'] + $s['billing']) > 0.5);
 
 if ($search !== '') {
     $bySale = array_filter($bySale, fn($name) => stripos($name, $search) !== false, ARRAY_FILTER_USE_KEY);
 }
 
-uasort($bySale, fn($a, $b) => ($b['short'] + $b['billing']) <=> ($a['short'] + $a['billing']));
+uasort($bySale, fn($a, $b) =>
+    ($b['short'] + $b['long'] + $b['billing']) <=> ($a['short'] + $a['long'] + $a['billing'])
+);
 
 $grandShort = array_sum(array_column($bySale, 'short'));
+$grandLong = array_sum(array_column($bySale, 'long'));
 $grandBilling = array_sum(array_column($bySale, 'billing'));
-$grandTotal = $grandShort + $grandBilling;
+$grandTotal = $grandShort + $grandLong + $grandBilling;
 
 $pageTitle = 'Công nợ tổng hợp';
 require_once __DIR__ . '/../includes/header.php';
@@ -55,13 +93,16 @@ require_once __DIR__ . '/../includes/header.php';
 </div>
 
 <div class="row g-3 mb-3">
-  <div class="col-sm-4">
+  <div class="col-sm-3">
     <div class="stat-card"><div class="text-muted small">Nợ ngắn hạn</div><div class="stat-value"><?= money($grandShort) ?></div></div>
   </div>
-  <div class="col-sm-4">
+  <div class="col-sm-3">
+    <div class="stat-card"><div class="text-muted small">Nợ dài hạn <span class="text-muted" title="Chỉ tính các kỳ đã đến hạn (ngày bắt đầu kỳ &le; hôm nay)">(đã đến hạn)</span></div><div class="stat-value"><?= money($grandLong) ?></div></div>
+  </div>
+  <div class="col-sm-3">
     <div class="stat-card"><div class="text-muted small">Nợ chi phí khác</div><div class="stat-value"><?= money($grandBilling) ?></div></div>
   </div>
-  <div class="col-sm-4">
+  <div class="col-sm-3">
     <div class="stat-card"><div class="text-muted small">Tổng công nợ</div><div class="stat-value text-danger"><?= money($grandTotal) ?></div></div>
   </div>
 </div>
@@ -80,13 +121,14 @@ require_once __DIR__ . '/../includes/header.php';
 </div>
 
 <div class="card">
-  <div class="card-header">Công nợ theo Sale (ngắn hạn + chi phí khác cộng lại)</div>
+  <div class="card-header">Công nợ theo Sale (ngắn hạn + dài hạn đã đến hạn + chi phí khác cộng lại)</div>
   <div class="table-responsive">
     <table class="table table-hover mb-0 align-middle">
       <thead>
         <tr>
           <th>Sale</th>
           <th class="text-end">Nợ ngắn hạn</th>
+          <th class="text-end">Nợ dài hạn</th>
           <th class="text-end">Nợ chi phí khác</th>
           <th class="text-end">Tổng công nợ</th>
           <th class="text-end">Thao tác</th>
@@ -94,13 +136,14 @@ require_once __DIR__ . '/../includes/header.php';
       </thead>
       <tbody>
         <?php if (!$bySale): ?>
-          <tr><td colspan="5" class="text-center text-muted py-4">Chưa có dữ liệu.</td></tr>
+          <tr><td colspan="6" class="text-center text-muted py-4">Chưa có dữ liệu.</td></tr>
         <?php endif; ?>
         <?php $idx = 0; foreach ($bySale as $saleName => $s): $idx++; ?>
-          <?php $total = $s['short'] + $s['billing']; ?>
+          <?php $total = $s['short'] + $s['long'] + $s['billing']; ?>
           <tr>
             <td class="fw-semibold"><?= e($saleName) ?></td>
             <td class="text-end <?= $s['short'] != 0 ? '' : 'text-muted' ?>"><?= money($s['short']) ?></td>
+            <td class="text-end <?= $s['long'] != 0 ? '' : 'text-muted' ?>"><?= money($s['long']) ?></td>
             <td class="text-end <?= $s['billing'] != 0 ? '' : 'text-muted' ?>"><?= money($s['billing']) ?></td>
             <td class="text-end fw-semibold <?= $total > 0 ? 'text-danger' : ($total < 0 ? 'text-success' : '') ?>"><?= money($total) ?></td>
             <td class="text-end">
@@ -123,7 +166,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
         <div class="modal-body">
 
-          <?php $modalTotal = $s['short'] + $s['billing']; ?>
+          <?php $modalTotal = $s['short'] + $s['long'] + $s['billing']; ?>
           <div class="text-center p-3 mb-4 rounded" style="background: var(--bs-light);">
             <div class="text-muted text-uppercase small" style="letter-spacing:.05em;">Tổng cộng công nợ</div>
             <div class="fw-bold <?= $modalTotal > 0 ? 'text-danger' : ($modalTotal < 0 ? 'text-success' : '') ?>" style="font-size:2rem;"><?= money($modalTotal) ?></div>
@@ -145,6 +188,31 @@ require_once __DIR__ . '/../includes/header.php';
                     <td><?= vndate($r['checkout_date']) ?></td>
                     <td class="text-end"><?= money($r['total_amount']) ?></td>
                     <td class="text-end text-success"><?= money($r['paid_amount']) ?></td>
+                    <td class="text-end fw-semibold <?= $r_remain > 0 ? 'text-danger' : '' ?>"><?= money($r_remain) ?></td>
+                    <td class="text-end"><a href="<?= url('/deals/form.php?id=' . $r['id']) ?>" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a></td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+          <?php endif; ?>
+
+          <div class="fw-semibold mb-2">Doanh thu dài hạn <span class="text-muted small">(chỉ tính kỳ đã đến hạn, <?= count($s['long_rows']) ?> deal, còn nợ <?= money($s['long']) ?>)</span></div>
+          <?php if (!$s['long_rows']): ?>
+            <div class="text-muted small mb-3">Không có.</div>
+          <?php else: ?>
+          <div class="table-responsive mb-3">
+            <table class="table table-sm">
+              <thead><tr><th>Phòng</th><th>Thời hạn deal</th><th class="text-end">Số kỳ đã đến hạn</th><th class="text-end">Tổng</th><th class="text-end">Đã thu</th><th class="text-end">Còn nợ</th><th></th></tr></thead>
+              <tbody>
+                <?php foreach ($s['long_rows'] as $r): ?>
+                  <?php $r_remain = (float)$r['total'] - (float)$r['paid']; ?>
+                  <tr>
+                    <td><?= e($r['room_code']) ?></td>
+                    <td><?= vndate($r['checkin_date']) ?> - <?= vndate($r['checkout_date']) ?></td>
+                    <td class="text-end"><?= (int)$r['due_period_count'] ?></td>
+                    <td class="text-end"><?= money($r['total']) ?></td>
+                    <td class="text-end text-success"><?= money($r['paid']) ?></td>
                     <td class="text-end fw-semibold <?= $r_remain > 0 ? 'text-danger' : '' ?>"><?= money($r_remain) ?></td>
                     <td class="text-end"><a href="<?= url('/deals/form.php?id=' . $r['id']) ?>" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a></td>
                   </tr>
