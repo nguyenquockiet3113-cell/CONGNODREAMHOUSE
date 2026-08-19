@@ -48,6 +48,9 @@ foreach ($billingRows as $r) {
     $bySale[$name]['billing_rows'][] = $r;
 }
 
+// Chi hien nhung Sale con cong no thuc su (chua thu), bo qua da tra du/qua tay
+$bySale = array_filter($bySale, fn($s) => ($s['short'] + $s['long'] + $s['billing']) > 0.5);
+
 if ($search !== '') {
     $bySale = array_filter($bySale, fn($name) => stripos($name, $search) !== false, ARRAY_FILTER_USE_KEY);
 }
@@ -141,6 +144,12 @@ require_once __DIR__ . '/../includes/header.php';
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
+
+          <?php $modalTotal = $s['short'] + $s['long'] + $s['billing']; ?>
+          <div class="text-center p-3 mb-4 rounded" style="background: var(--bs-light);">
+            <div class="text-muted text-uppercase small" style="letter-spacing:.05em;">Tổng cộng công nợ</div>
+            <div class="fw-bold <?= $modalTotal > 0 ? 'text-danger' : ($modalTotal < 0 ? 'text-success' : '') ?>" style="font-size:2rem;"><?= money($modalTotal) ?></div>
+          </div>
 
           <div class="fw-semibold mb-2">Doanh thu ngắn hạn <span class="text-muted small">(<?= count($s['short_rows']) ?> deal, còn nợ <?= money($s['short']) ?>)</span></div>
           <?php if (!$s['short_rows']): ?>
