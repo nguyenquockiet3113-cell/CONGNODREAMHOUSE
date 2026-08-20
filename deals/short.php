@@ -74,11 +74,19 @@ require_once __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
+<div class="card mb-3">
+  <div class="card-body d-flex align-items-center gap-3 flex-wrap">
+    <span class="small text-muted">Đã chọn: <strong id="selectedCount">0</strong> deal</span>
+    <button type="button" id="bulkDeleteBtn" class="btn btn-outline-danger btn-sm" disabled><i class="bi bi-trash"></i> Xóa đã chọn</button>
+  </div>
+</div>
+
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover table-sm mb-0 align-middle">
       <thead class="table-warning">
         <tr>
+          <th style="width:30px;"><input type="checkbox" id="selectAllCheck" class="form-check-input"></th>
           <th>Note</th>
           <th>Sale</th>
           <th>Code</th>
@@ -98,7 +106,7 @@ require_once __DIR__ . '/../includes/header.php';
       </thead>
       <tbody>
         <?php if (!$deals): ?>
-          <tr><td colspan="15" class="text-center text-muted py-4">Chưa có deal ngắn hạn nào.</td></tr>
+          <tr><td colspan="16" class="text-center text-muted py-4">Chưa có deal ngắn hạn nào.</td></tr>
         <?php endif; ?>
         <?php foreach ($deals as $d): ?>
           <?php
@@ -107,6 +115,7 @@ require_once __DIR__ . '/../includes/header.php';
             $remain = $grand - (float)$d['paid_amount'];
           ?>
           <tr>
+            <td><input type="checkbox" class="form-check-input row-check" value="<?= $d['id'] ?>"></td>
             <td class="small"><?= e($d['note']) ?></td>
             <td class="fw-semibold"><?= e($d['guest_name']) ?></td>
             <td><?= e($d['room_code']) ?></td>
@@ -144,4 +153,44 @@ require_once __DIR__ . '/../includes/header.php';
     </table>
   </div>
 </div>
+
+<script>
+var selectAllCheck = document.getElementById('selectAllCheck');
+var rowChecks = document.querySelectorAll('.row-check');
+var selectedCountEl = document.getElementById('selectedCount');
+var bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+
+function updateBulkUi() {
+  var count = document.querySelectorAll('.row-check:checked').length;
+  selectedCountEl.textContent = count;
+  bulkDeleteBtn.disabled = count === 0;
+}
+rowChecks.forEach(function (cb) { cb.addEventListener('change', updateBulkUi); });
+if (selectAllCheck) {
+  selectAllCheck.addEventListener('change', function () {
+    rowChecks.forEach(function (cb) { cb.checked = selectAllCheck.checked; });
+    updateBulkUi();
+  });
+}
+if (bulkDeleteBtn) {
+  bulkDeleteBtn.addEventListener('click', function () {
+    var ids = Array.from(document.querySelectorAll('.row-check:checked')).map(function (cb) { return cb.value; });
+    if (!ids.length) return;
+    if (!confirm('Xóa ' + ids.length + ' deal đã chọn? Không thể hoàn tác.')) return;
+    var form = document.createElement('form');
+    form.method = 'post';
+    form.action = '<?= url('/deals/bulk_delete.php') ?>';
+    form.innerHTML = '<?= csrf_field() ?>' + '<input type="hidden" name="back_to" value="short">';
+    ids.forEach(function (id) {
+      var inp = document.createElement('input');
+      inp.type = 'hidden';
+      inp.name = 'ids[]';
+      inp.value = id;
+      form.appendChild(inp);
+    });
+    document.body.appendChild(form);
+    form.submit();
+  });
+}
+</script>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
