@@ -16,7 +16,7 @@ $deal = $stmt->fetch();
 if ($deal) {
     $pdo->prepare('DELETE FROM deal_periods WHERE deal_id = ?')->execute([$id]);
     if ($deal['deal_type'] === 'dai_han') {
-        generate_deal_periods($pdo, $id, $deal['checkin_date'], $deal['checkout_date'], $deal['price_per_unit'], $deal['deposit_amount']);
+        generate_deal_periods($pdo, $id, $deal['checkin_date'], $deal['checkout_date'], $deal['price_per_unit']);
     }
     flash('success', 'Đã tạo lại các kỳ thanh toán.');
 } else {

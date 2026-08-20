@@ -45,8 +45,7 @@ if ($month !== '') {
 $nextDueByDeal = [];
 foreach ($deals as $d) {
     foreach ($periodsByDeal[$d['id']] ?? [] as $p) {
-        $periodTotal = (float)$p['rent_amount'] + (float)$p['utilities_amount'];
-        $remain = $periodTotal - (float)$p['paid_amount'];
+        $remain = deal_period_remain($p);
         if ($remain > 0.5) {
             $days = (int)round((strtotime($p['period_end']) - strtotime($today)) / 86400);
             $nextDueByDeal[$d['id']] = [
@@ -78,17 +77,18 @@ foreach ($nextDueByDeal as $due) {
 
 $rooms = $pdo->query('SELECT room_code, zone, bedrooms FROM rooms ORDER BY room_code')->fetchAll();
 
-$sumTotal = 0; $sumPaid = 0; $totalPeriods = 0;
+$sumTotal = 0; $sumPaid = 0; $sumDeposit = 0; $totalPeriods = 0;
 $dealStats = [];
 foreach ($deals as $d) {
     $periods = $periodsByDeal[$d['id']] ?? [];
-    $total = 0; $paid = 0;
+    $total = 0; $paid = 0; $depositApplied = 0;
     foreach ($periods as $p) {
         $total += (float)$p['rent_amount'] + (float)$p['utilities_amount'];
         $paid += (float)$p['paid_amount'];
+        $depositApplied += (float)$p['deposit_amount'];
     }
-    $dealStats[$d['id']] = ['total' => $total, 'paid' => $paid, 'count' => count($periods)];
-    $sumTotal += $total; $sumPaid += $paid; $totalPeriods += count($periods);
+    $dealStats[$d['id']] = ['total' => $total, 'paid' => $paid, 'deposit' => $depositApplied, 'count' => count($periods)];
+    $sumTotal += $total; $sumPaid += $paid; $sumDeposit += $depositApplied; $totalPeriods += count($periods);
 }
 
 $pageTitle = 'Doanh thu dài hạn';
@@ -119,7 +119,7 @@ require_once __DIR__ . '/../includes/header.php';
     <div class="stat-card"><div class="text-muted small">Đã thu</div><div class="stat-value text-success"><?= money($sumPaid) ?></div></div>
   </div>
   <div class="col-sm-3">
-    <div class="stat-card"><div class="text-muted small">Còn phải thu</div><div class="stat-value text-danger"><?= money($sumTotal - $sumPaid) ?></div></div>
+    <div class="stat-card"><div class="text-muted small">Còn phải thu</div><div class="stat-value text-danger"><?= money($sumTotal - $sumPaid - $sumDeposit) ?></div></div>
   </div>
   <div class="col-sm-3">
     <div class="stat-card"><div class="text-muted small">Số deal / kỳ</div><div class="stat-value"><?= count($deals) ?> / <?= $totalPeriods ?></div></div>
@@ -185,7 +185,7 @@ foreach ($deals as $d) {
         </thead>
         <tbody>
           <?php foreach ($zoneDeals as $d): ?>
-            <?php $stat = $dealStats[$d['id']]; $remain = $stat['total'] - $stat['paid']; $due = $nextDueByDeal[$d['id']] ?? null; ?>
+            <?php $stat = $dealStats[$d['id']]; $remain = $stat['total'] - $stat['paid'] - $stat['deposit']; $due = $nextDueByDeal[$d['id']] ?? null; ?>
             <tr>
               <td class="fw-semibold"><?= e($d['room_code']) ?></td>
               <td><?= e($d['guest_name']) ?></td>
@@ -193,7 +193,7 @@ foreach ($deals as $d) {
               <td><?= $stat['count'] ?> kỳ</td>
               <td class="text-end"><?= money($stat['total']) ?></td>
               <td class="text-end text-success"><?= money($stat['paid']) ?></td>
-              <td class="text-end <?= $remain > 0 ? 'text-danger' : '' ?>"><?= money($remain) ?></td>
+              <td class="text-end <?= $remain > 0 ? 'text-danger' : ($remain < 0 ? 'text-success' : '') ?>"><?= money($remain) ?></td>
               <td class="small"><?= $d['receiving_account'] ? e($d['receiving_account']) : '<span class="text-muted">—</span>' ?></td>
               <td class="small">
                 <?php if (!$due): ?>
@@ -241,7 +241,7 @@ foreach ($deals as $d) {
             </thead>
             <tbody>
               <?php foreach ($periods as $p): ?>
-                <?php $pt = (float)$p['rent_amount'] + (float)$p['utilities_amount']; $pr = $pt - (float)$p['paid_amount']; ?>
+                <?php $pt = deal_period_total($p); $pr = deal_period_remain($p); ?>
                 <tr>
                   <td><?= e(deal_period_label((int)$p['period_index'], $p['period_start'])) ?></td>
                   <td><?= vndate($p['period_start']) ?> - <?= vndate($p['period_end']) ?></td>
@@ -258,7 +258,7 @@ foreach ($deals as $d) {
                   <?php endforeach; ?>
                   <td class="text-end fw-semibold"><?= money($pt) ?></td>
                   <td class="text-end text-success"><?= money($p['paid_amount']) ?></td>
-                  <td class="text-end <?= $pr > 0 ? 'text-danger' : '' ?>"><?= money($pr) ?></td>
+                  <td class="text-end <?= $pr > 0 ? 'text-danger' : ($pr < 0 ? 'text-success' : '') ?>"><?= money($pr) ?></td>
                   <td class="text-end"><a href="<?= url('/deals/bill.php?deal_id=' . $d['id'] . '&period_id=' . $p['id']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary" title="Xem/in bill"><i class="bi bi-printer"></i></a></td>
                 </tr>
               <?php endforeach; ?>
@@ -323,7 +323,7 @@ foreach ($deals as $d) {
             <div class="col-md-3">
               <label class="form-label">Tiền cọc (đ)</label>
               <input type="number" step="1" name="deposit_amount" id="lr_deposit" class="form-control" value="0">
-              <div class="form-text">Chỉ để giữ chỗ, không tính vào tiền nhà cần thu.</div>
+              <div class="form-text">Chỉ để tham khảo/giữ chỗ. Khi trả phòng, vào sửa deal rồi nhập số tiền cọc vào đúng cột "Cọc" của kỳ cuối để tự trừ vào Còn lại.</div>
             </div>
             <div class="col-md-3 d-flex align-items-center gap-2 mt-4">
               <div class="form-check">

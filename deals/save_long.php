@@ -62,9 +62,7 @@ $pdo->prepare('INSERT INTO deals (' . implode(',', $cols) . ") VALUES ($placehol
 $dealId = (int)$pdo->lastInsertId();
 
 if ($dealType === 'dai_han') {
-    // Tien coc chi de giu cho (phong hoi khi tra phong), khong tinh vao tien nha
-    // can thu va khong tu dong ghi nhan la da thanh toan.
-    generate_deal_periods($pdo, $dealId, $checkin, $checkout, $price, $deposit);
+    generate_deal_periods($pdo, $dealId, $checkin, $checkout, $price);
 }
 
 recompute_deal_paid_amount($pdo, $dealId);

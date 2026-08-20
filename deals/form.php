@@ -143,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Neu chuyen thanh dai han va chua tung co ky nao -> sinh ky lan dau
             if ($dealType === 'dai_han' && !$periods) {
-                generate_deal_periods($pdo, $id, $deal['checkin_date'], $deal['checkout_date'], $deal['price_per_unit'], $deal['deposit_amount']);
+                generate_deal_periods($pdo, $id, $deal['checkin_date'], $deal['checkout_date'], $deal['price_per_unit']);
             }
 
             // Neu co tung ky rieng (vd doi gia giua chung), tong tien phai la TONG cac ky
@@ -168,7 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = (int)$pdo->lastInsertId();
 
             if ($dealType === 'dai_han') {
-                generate_deal_periods($pdo, $id, $deal['checkin_date'], $deal['checkout_date'], $deal['price_per_unit'], $deal['deposit_amount']);
+                generate_deal_periods($pdo, $id, $deal['checkin_date'], $deal['checkout_date'], $deal['price_per_unit']);
                 // Coc khong tinh vao tong can thu (coc duoc theo doi rieng qua lich su thanh toan)
                 $sumStmt = $pdo->prepare('SELECT COALESCE(SUM(rent_amount + utilities_amount),0) FROM deal_periods WHERE deal_id = ?');
                 $sumStmt->execute([$id]);
@@ -281,6 +281,9 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="col-md-3">
           <label class="form-label">Tiền cọc (đ)</label>
           <input type="number" step="1" name="deposit_amount" id="deposit_amount" class="form-control" value="<?= e($deal['deposit_amount']) ?>">
+          <?php if ($periods): ?>
+            <div class="form-text">Chỉ để tham khảo. Muốn trừ cọc vào kỳ nào (thường là kỳ cuối lúc trả phòng), nhập số tiền vào cột "Cọc" của đúng kỳ đó bên dưới.</div>
+          <?php endif; ?>
         </div>
         <div class="col-md-3">
           <label class="form-label">Ngày cọc</label>
@@ -553,7 +556,7 @@ var periodsTableBody = document.querySelector('#periodsTable tbody');
 function fmtVnd(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n)) + ' đ'; }
 function recalcPeriodRow(row) {
   var val = function (cls) { return parseFloat(row.querySelector('.' + cls) ? row.querySelector('.' + cls).value : 0) || 0; };
-  var rent = val('p-rent');
+  var rent = val('p-rent'), deposit = val('p-deposit');
   var fees = 0;
   row.querySelectorAll('.p-fee').forEach(function (inp) {
     var selfPaid = inp.classList.contains('p-fee-selfpaid');
@@ -564,9 +567,12 @@ function recalcPeriodRow(row) {
   var total = rent + fees;
   row.querySelector('.p-total').textContent = fmtVnd(total);
   var remainCell = row.querySelector('.p-remain');
-  var remain = total - paid;
+  // Coc dung de tat toan (thuong nhap vao ky cuoi luc check-out) nen tru vao Con lai,
+  // khong tinh vao Tong can TT.
+  var remain = total - paid - deposit;
   remainCell.textContent = fmtVnd(remain);
   remainCell.classList.toggle('text-danger', remain > 0);
+  remainCell.classList.toggle('text-success', remain < 0);
 }
 if (periodsTableBody) {
   periodsTableBody.querySelectorAll('.period-row').forEach(recalcPeriodRow);

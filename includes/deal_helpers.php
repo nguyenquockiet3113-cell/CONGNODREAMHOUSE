@@ -64,7 +64,7 @@ function deal_rent_total(int $nights, float $pricePerUnit, string $dealType): fl
 }
 
 /** Sinh cac ky 30 ngay cho 1 deal dai han. Chi goi khi deal chua co ky nao. */
-function generate_deal_periods(PDO $pdo, int $dealId, string $checkin, string $checkout, float $pricePerUnit, float $deposit): void
+function generate_deal_periods(PDO $pdo, int $dealId, string $checkin, string $checkout, float $pricePerUnit): void
 {
     $current = $checkin;
     $index = 1;
@@ -76,13 +76,27 @@ function generate_deal_periods(PDO $pdo, int $dealId, string $checkin, string $c
         // Ky du 30 ngay tinh dung gia; ky cuoi (neu ngan hon) tinh ti le theo so ngay thuc te
         $rentAmount = $periodDays >= DEAL_PERIOD_DAYS ? $pricePerUnit : round($pricePerUnit * $periodDays / DEAL_PERIOD_DAYS);
 
+        // Cot "coc" cua tung ky de trong (0), nguoi dung tu dien vao ky nao muon
+        // tat toan tien coc (thuong la ky cuoi/luc check-out) - xem ham deal_period_remain().
         $pdo->prepare(
-            'INSERT INTO deal_periods (deal_id, period_index, period_start, period_end, rent_amount, deposit_amount, electricity_amount, water_amount, management_fee_amount, internet_amount, cleaning_fee_amount, vehicle_fee_amount, other_fee_amount, utilities_amount, paid_amount) VALUES (?,?,?,?,?,?,0,0,0,0,0,0,0,0,0)'
-        )->execute([$dealId, $index, $current, $periodEndInclusive, $rentAmount, $index === 1 ? $deposit : 0]);
+            'INSERT INTO deal_periods (deal_id, period_index, period_start, period_end, rent_amount, deposit_amount, electricity_amount, water_amount, management_fee_amount, internet_amount, cleaning_fee_amount, vehicle_fee_amount, other_fee_amount, utilities_amount, paid_amount) VALUES (?,?,?,?,?,0,0,0,0,0,0,0,0,0,0)'
+        )->execute([$dealId, $index, $current, $periodEndInclusive, $rentAmount]);
 
         $current = $periodEnd;
         $index++;
     }
+}
+
+/** Tong can TT 1 ky (khong gom coc - coc chi tat toan/tru vao Con lai). */
+function deal_period_total(array $period): float
+{
+    return (float)$period['rent_amount'] + (float)$period['utilities_amount'];
+}
+
+/** Con lai 1 ky = Tong can TT - Da TT - Coc (coc dung de tat toan luc check-out). */
+function deal_period_remain(array $period): float
+{
+    return deal_period_total($period) - (float)$period['paid_amount'] - (float)$period['deposit_amount'];
 }
 
 /**

@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $newId = (int)$pdo->lastInsertId();
 
                     if ($dealType === 'dai_han') {
-                        generate_deal_periods($pdo, $newId, $checkin, $checkout, $price, 0);
+                        generate_deal_periods($pdo, $newId, $checkin, $checkout, $price);
                     }
 
                     $inserted++;

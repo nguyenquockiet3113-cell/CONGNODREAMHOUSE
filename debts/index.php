@@ -12,7 +12,7 @@ $shortRows = $pdo->query(
 
 // Dai han: chi tinh cac ky DA DEN HAN (period_start <= hom nay), ky chua toi khong cong vao cong no
 $longPeriodStmt = $pdo->prepare(
-    "SELECT dp.deal_id, dp.period_index, dp.period_start, dp.period_end, dp.rent_amount, dp.utilities_amount, dp.paid_amount,
+    "SELECT dp.deal_id, dp.period_index, dp.period_start, dp.period_end, dp.rent_amount, dp.utilities_amount, dp.paid_amount, dp.deposit_amount,
             d.guest_name, d.room_code, d.checkin_date, d.checkout_date
      FROM deal_periods dp JOIN deals d ON d.id = dp.deal_id
      WHERE d.deal_type = 'dai_han' AND dp.period_start <= ?
@@ -48,17 +48,18 @@ foreach ($longPeriodRows as $p) {
         $longByDeal[$dealId] = [
             'id' => $dealId, 'guest_name' => $p['guest_name'], 'room_code' => $p['room_code'],
             'checkin_date' => $p['checkin_date'], 'checkout_date' => $p['checkout_date'],
-            'due_period_count' => 0, 'total' => 0.0, 'paid' => 0.0,
+            'due_period_count' => 0, 'total' => 0.0, 'paid' => 0.0, 'deposit' => 0.0,
         ];
     }
     $longByDeal[$dealId]['due_period_count']++;
     $longByDeal[$dealId]['total'] += (float)$p['rent_amount'] + (float)$p['utilities_amount'];
     $longByDeal[$dealId]['paid'] += (float)$p['paid_amount'];
+    $longByDeal[$dealId]['deposit'] += (float)$p['deposit_amount'];
 }
 foreach ($longByDeal as $r) {
     $name = trim($r['guest_name']) !== '' ? trim($r['guest_name']) : '(Chưa đặt tên)';
     $ensure($name);
-    $bySale[$name]['long'] += $r['total'] - $r['paid'];
+    $bySale[$name]['long'] += $r['total'] - $r['paid'] - $r['deposit'];
     $bySale[$name]['long_rows'][] = $r;
 }
 
@@ -206,14 +207,14 @@ require_once __DIR__ . '/../includes/header.php';
               <thead><tr><th>Phòng</th><th>Thời hạn deal</th><th class="text-end">Số kỳ đã đến hạn</th><th class="text-end">Tổng</th><th class="text-end">Đã thu</th><th class="text-end">Còn nợ</th><th></th></tr></thead>
               <tbody>
                 <?php foreach ($s['long_rows'] as $r): ?>
-                  <?php $r_remain = (float)$r['total'] - (float)$r['paid']; ?>
+                  <?php $r_remain = (float)$r['total'] - (float)$r['paid'] - (float)$r['deposit']; ?>
                   <tr>
                     <td><?= e($r['room_code']) ?></td>
                     <td><?= vndate($r['checkin_date']) ?> - <?= vndate($r['checkout_date']) ?></td>
                     <td class="text-end"><?= (int)$r['due_period_count'] ?></td>
                     <td class="text-end"><?= money($r['total']) ?></td>
                     <td class="text-end text-success"><?= money($r['paid']) ?></td>
-                    <td class="text-end fw-semibold <?= $r_remain > 0 ? 'text-danger' : '' ?>"><?= money($r_remain) ?></td>
+                    <td class="text-end fw-semibold <?= $r_remain > 0 ? 'text-danger' : ($r_remain < 0 ? 'text-success' : '') ?>"><?= money($r_remain) ?></td>
                     <td class="text-end"><a href="<?= url('/deals/form.php?id=' . $r['id']) ?>" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a></td>
                   </tr>
                 <?php endforeach; ?>
